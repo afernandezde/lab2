@@ -1,5 +1,7 @@
 package com.tecnocampus.LS2.protube_back.controller;
 
+import com.tecnocampus.LS2.protube_back.controller.dto.videoSaveDTO;
+import com.tecnocampus.LS2.protube_back.controller.mapper.VideoMapper;
 import com.tecnocampus.LS2.protube_back.services.VideoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -21,5 +23,11 @@ public class VideosController {
     public ResponseEntity<List<String>> getVideos() {
         return ResponseEntity.ok().body(videoService.getVideos());
 
+    }
+
+    @PostMapping("/save")
+    public ResponseEntity<String> saveVideo(videoSaveDTO videoSaveDTO) {
+        videoService.saveVideo(VideoMapper.toVideo(videoSaveDTO));
+        return ResponseEntity.ok("Video saved successfully");
     }
 }

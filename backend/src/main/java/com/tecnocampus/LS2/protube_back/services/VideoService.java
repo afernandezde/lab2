@@ -16,7 +16,14 @@ public class VideoService {
     }
 
     public List<String> getVideos() {
-        return List.of("video1", "video2");
+        return videoRepository.findAll()
+            .stream()
+            .map(Video::getTitle)
+            .toList();
+    }
+
+    public Video getVideoById(String id) {
+        return videoRepository.findById(id).orElse(null);
     }
 
     public Video saveVideo(Video video) {

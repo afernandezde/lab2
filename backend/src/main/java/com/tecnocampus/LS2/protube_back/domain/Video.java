@@ -2,8 +2,6 @@ package com.tecnocampus.LS2.protube_back.domain;
 
 import java.util.UUID;
 
-import org.springframework.stereotype.Component;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 

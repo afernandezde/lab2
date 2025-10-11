@@ -2,7 +2,14 @@ package com.tecnocampus.LS2.protube_back.domain;
 
 import java.util.UUID;
 
+import org.springframework.stereotype.Component;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+
+@Entity
 public class Video {
+    @Id
     private String videoId = String.valueOf(UUID.randomUUID());
     private String userId;
     private String title;

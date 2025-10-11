@@ -7,4 +7,13 @@ public class VideoMapper {
     public static Video toVideo(videoSaveDTO dto) {
         return new Video(dto.userId(), dto.title(), dto.description(), dto.fileName());
     }
+
+    public static videoSaveDTO toVideoSaveDTO(Video video) {
+        return new videoSaveDTO(
+            video.getUserId(),
+            video.getTitle(),
+            video.getDescription(),
+            video.getFileName()
+        );
+    }
 }

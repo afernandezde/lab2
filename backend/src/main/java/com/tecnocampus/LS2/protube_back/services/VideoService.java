@@ -29,4 +29,17 @@ public class VideoService {
     public Video saveVideo(Video video) {
         return videoRepository.save(video);
     }
+
+    public boolean deleteVideo(String id) {
+        var existing = videoRepository.findById(id);
+        if (existing.isEmpty()) {
+            return false;
+        }
+        videoRepository.deleteById(id);
+        return true;
+    }
+
+    public java.util.List<com.tecnocampus.LS2.protube_back.domain.Video> getAll() {
+        return videoRepository.findAll();
+    }
 }

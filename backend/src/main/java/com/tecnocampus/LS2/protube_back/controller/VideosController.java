@@ -8,11 +8,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import com.tecnocampus.LS2.protube_back.domain.Video;
 
 @RestController
 @RequestMapping("/api/videos")
@@ -40,5 +42,19 @@ public class VideosController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(video.getTitle());
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<Video>> getAllVideos() {
+        return ResponseEntity.ok(videoService.getAll());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteVideo(@PathVariable String id) {
+        boolean deleted = videoService.deleteVideo(id);
+        if (!deleted) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.noContent().build();
     }
 }

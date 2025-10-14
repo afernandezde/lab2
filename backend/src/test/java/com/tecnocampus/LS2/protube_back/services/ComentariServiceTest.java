@@ -1,6 +1,6 @@
 package com.tecnocampus.LS2.protube_back.services;
 
-import com.tecnocampus.LS2.protube_back.controller.DTO.ComentariDTO;
+import com.tecnocampus.LS2.protube_back.controller.dto.ComentariDTO;
 import com.tecnocampus.LS2.protube_back.repository.ComentariRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +17,7 @@ class ComentariServiceTest {
     void setUp() {
         repo = new ComentariRepository();
         repo.clear();
-        videoService = new VideoService();
+       // videoService = new VideoService();
         service = new ComentariService(repo, videoService);
     }
 

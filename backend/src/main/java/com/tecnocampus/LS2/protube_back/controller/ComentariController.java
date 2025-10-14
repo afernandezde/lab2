@@ -1,6 +1,6 @@
 package com.tecnocampus.LS2.protube_back.controller;
 
-import com.tecnocampus.LS2.protube_back.controller.DTO.ComentariDTO;
+import com.tecnocampus.LS2.protube_back.controller.dto.ComentariDTO;
 import com.tecnocampus.LS2.protube_back.services.ComentariService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

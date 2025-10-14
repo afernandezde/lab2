@@ -1,8 +1,8 @@
 package com.tecnocampus.LS2.protube_back.services;
 
-import com.tecnocampus.LS2.protube_back.Domain.Comentari;
-import com.tecnocampus.LS2.protube_back.controller.DTO.ComentariDTO;
-import com.tecnocampus.LS2.protube_back.controller.Mapper.ComentariMapper;
+import com.tecnocampus.LS2.protube_back.controller.dto.ComentariDTO;
+import com.tecnocampus.LS2.protube_back.controller.mapper.ComentariMapper;
+import com.tecnocampus.LS2.protube_back.domain.Comentari;
 import com.tecnocampus.LS2.protube_back.repository.ComentariRepository;
 import org.springframework.stereotype.Service;
 
@@ -38,7 +38,7 @@ public class ComentariService {
 		if (dto.videoId() == null || dto.videoId().isBlank()) {
 			throw new IllegalArgumentException("videoId is required to create a comment");
 		}
-		if (!videoService.exists(dto.videoId())) {
+		if (videoService.getVideoById(dto.videoId()) == null) {
 			throw new IllegalArgumentException("video does not exist: " + dto.videoId());
 		}
 		Comentari entity = ComentariMapper.toEntity(dto);

@@ -1,4 +1,4 @@
-package com.tecnocampus.LS2.protube_back.Domain;
+package com.tecnocampus.LS2.protube_back.domain;
 
 /**
  * Domain model for a comment (Comentari).

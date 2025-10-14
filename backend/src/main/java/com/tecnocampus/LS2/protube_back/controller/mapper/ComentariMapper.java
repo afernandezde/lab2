@@ -1,7 +1,7 @@
-package com.tecnocampus.LS2.protube_back.controller.Mapper;
+package com.tecnocampus.LS2.protube_back.controller.mapper;
 
-import com.tecnocampus.LS2.protube_back.Domain.Comentari;
-import com.tecnocampus.LS2.protube_back.controller.DTO.ComentariDTO;
+import com.tecnocampus.LS2.protube_back.controller.dto.ComentariDTO;
+import com.tecnocampus.LS2.protube_back.domain.Comentari;
 
 public class ComentariMapper {
 

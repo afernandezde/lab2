@@ -1,8 +1,9 @@
 package com.tecnocampus.LS2.protube_back.repository;
 
-import com.tecnocampus.LS2.protube_back.Domain.Comentari;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.tecnocampus.LS2.protube_back.domain.Comentari;
 
 import java.util.Optional;
 

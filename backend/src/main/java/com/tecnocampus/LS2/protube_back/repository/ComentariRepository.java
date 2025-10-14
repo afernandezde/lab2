@@ -1,7 +1,8 @@
 package com.tecnocampus.LS2.protube_back.repository;
 
-import com.tecnocampus.LS2.protube_back.Domain.Comentari;
 import org.springframework.stereotype.Repository;
+
+import com.tecnocampus.LS2.protube_back.domain.Comentari;
 
 import java.util.ArrayList;
 import java.util.List;

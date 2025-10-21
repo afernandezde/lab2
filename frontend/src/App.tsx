@@ -1,8 +1,9 @@
 import './App.css';
 import { useAllVideos } from './useAllVideos';
 import { useState } from 'react';
-import { CircleUser, User } from 'lucide-react';
+import { CircleUser } from 'lucide-react';
 import LoginModal from './components/LoginModal';
+import VideoGrid from './components/VideoGrid';
 
 function App() {
   const [showLogin, setShowLogin] = useState(false);
@@ -23,8 +24,10 @@ function App() {
 
       <header className="App-header">
         <img src="/protube-logo-removebg-preview.png" className="App-logo" alt="logo" />
-        <ContentApp />
       </header>
+      <main>
+        <ContentApp />
+      </main>
     </div>
   );
 }
@@ -41,16 +44,7 @@ function ContentApp() {
         </div>
       );
     case 'success':
-      return (
-        <>
-          <strong>Videos available:</strong>
-          <ul>
-            {value.map((item) => (
-              <li>{item}</li>
-            ))}
-          </ul>
-        </>
-      );
+      return <VideoGrid videos={value} />;
   }
   return <div>Idle...</div>;
 }

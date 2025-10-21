@@ -70,7 +70,7 @@ public class AppStartupRunner implements ApplicationRunner {
                 // find user id from repository via listAllUsers()
                 var users = userService.listAllUsers();
                 String ownerId = users.get(userIndex).id();
-                Video v = new Video(ownerId, "Video " + i, "Description for video " + i, "file" + i + ".mp4");
+                Video v = new Video(ownerId,"" + i, "Description for video " + i, i + ".mp4");
                 Video saved = videoService.saveVideo(v);
                 createdVideos.add(saved);
                 LOG.info("Created video {} (id={}) by user {}", saved.getTitle(), saved.getVideoId(), ownerId);

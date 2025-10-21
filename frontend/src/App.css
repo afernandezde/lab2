@@ -30,3 +30,32 @@
     transform: rotate(360deg);
   }
 }
+
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.video-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.video-item video {
+  width: 100%;
+  border-radius: 12px;
+  background-color: #000;
+}
+
+.video-item p {
+  margin-top: 0.5rem;
+  font-weight: 500;
+  font-size: 1rem;
+  color: #f1f1f1;
+  text-align: left;
+}

@@ -18,7 +18,7 @@ public class VideoService {
     public List<String> getVideos() {
         return videoRepository.findAll()
             .stream()
-            .map(Video::getTitle)
+            .map(Video::getFileName)
             .toList();
     }
 

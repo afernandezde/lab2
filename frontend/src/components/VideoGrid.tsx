@@ -1,25 +1,23 @@
-import { useState, useEffect } from 'react';
 import { getEnv } from '../utils/Env';
+import { VideoItem } from '../useAllVideos';
 
-const VideoGrid = () => {
-  const [someData, setSomeData] = useState([]);
+interface VideoGridProps {
+  videos: VideoItem[];
+}
 
-  useEffect(() => {
-    fetch(getEnv().API_BASE_URL + '/someEndpoint')
-      .then((res) => {
-        return res.json();
-      })
-      .then((data) => {
-        setSomeData(data);
-      });
-  }, []);
-
+const VideoGrid = ({ videos }: VideoGridProps) => {
   return (
-    <ul className="row g-4">
-      {someData?.map((entity) => (
-        <li>{entity}</li>
+    <div className="video-grid">
+      {videos.map((v) => (
+        <div key={v.name} className="video-item">
+          <video controls width="100%" poster={v.posterUrl}>
+            <source src={v.videoUrl} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          <p>{v.name.split('.').slice(0, -1).join('.').replace(/_/g, ' ')}</p>
+        </div>
       ))}
-    </ul>
+    </div>
   );
 };
 

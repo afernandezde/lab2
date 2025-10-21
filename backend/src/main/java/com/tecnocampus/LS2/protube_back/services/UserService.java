@@ -4,11 +4,19 @@ import com.tecnocampus.LS2.protube_back.repository.UserRepository;
 import com.tecnocampus.LS2.protube_back.domain.User;
 import com.tecnocampus.LS2.protube_back.controller.dto.UserDTO;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 import java.util.List;
 
 @Service
 public class UserService {
     private UserRepository repository;
+
+    public static enum LoginResult {
+        SUCCESS,
+        EMAIL_NOT_FOUND,
+        WRONG_PASSWORD
+    }
 
     public UserService(UserRepository repository) {
         this.repository = repository;
@@ -33,14 +41,20 @@ public class UserService {
         return true;
     }
 
-    public boolean login(String email, String password) {
-        var userOpt = repository.findByEmail(email);
-        if (userOpt.isPresent() && userOpt.get().getPassword().equals(password)) {
+    public void login(String email, String password) {
+        try {
+            Optional<User> userOpt = repository.findByEmail(email);
+            if (userOpt.isEmpty()) {
+                System.out.println("Error: el correo no existe.");
+                throw new RuntimeException("This email is not registered.");
+            }
+            if (!userOpt.get().getPassword().equals(password)) {
+                System.out.println("Error: la contraseña es incorrecta.");
+                throw new RuntimeException("Incorrect password.");
+            }
             System.out.println("Usuario autenticado con éxito. ID: " + userOpt.get().getId());
-            return true;
-        } else {
-            System.out.println("Error: correo o contraseña inválidos.");
-            return false;
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
         }
     }
 }

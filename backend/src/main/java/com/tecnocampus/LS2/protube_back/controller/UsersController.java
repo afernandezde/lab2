@@ -41,11 +41,18 @@ public class UsersController {
     // Enpoint to login a user
     @PostMapping("/login")
     public ResponseEntity<String> loginUser(@RequestParam String email, @RequestParam String password) {
-        boolean success = userService.login(email, password);
-        if (success) {
+        try {
+            userService.login(email, password);
             return ResponseEntity.ok("User logged in successfully.");
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Error: invalid email or password.");
+        } catch (RuntimeException e) {
+            String msg = e.getMessage();
+            if (msg.contains("The email doesn't exist")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(msg);
+            } else if (msg.contains("Incorrect password")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(msg);
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(msg);
+            }
         }
     }
 }

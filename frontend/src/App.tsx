@@ -3,6 +3,7 @@ import { useAllVideos } from './useAllVideos';
 import { useState } from 'react';
 import { CircleUser, User } from 'lucide-react';
 import LoginModal from './components/LoginModal';
+import Footer from './components/Footer'; // added
 
 function App() {
   const [showLogin, setShowLogin] = useState(false);
@@ -25,6 +26,8 @@ function App() {
         <img src="/protube-logo-removebg-preview.png" className="App-logo" alt="logo" />
         <ContentApp />
       </header>
+
+      <Footer /> {/* added */}
     </div>
   );
 }
@@ -46,7 +49,7 @@ function ContentApp() {
           <strong>Videos available:</strong>
           <ul>
             {value.map((item) => (
-              <li>{item}</li>
+              <li key={item}>{item}</li>
             ))}
           </ul>
         </>

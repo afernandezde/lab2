@@ -32,6 +32,32 @@ public class ComentariRepository {
 		return new ArrayList<>(store.values());
 	}
 
+	public List<Comentari> findByVideoId(String videoId) {
+		if (videoId == null) return List.of();
+		List<Comentari> out = new ArrayList<>();
+		for (Comentari c : store.values()) {
+			if (videoId.equals(c.getVideoId())) out.add(c);
+		}
+		return out;
+	}
+
+	public List<Comentari> findByUserId(String userId) {
+		if (userId == null) return List.of();
+		List<Comentari> out = new ArrayList<>();
+		for (Comentari c : store.values()) {
+			if (userId.equals(c.getUserId())) out.add(c);
+		}
+		return out;
+	}
+
+	public Map<String, List<Comentari>> findAllGroupedByVideo() {
+		Map<String, List<Comentari>> map = new java.util.HashMap<>();
+		for (Comentari c : store.values()) {
+			map.computeIfAbsent(c.getVideoId(), k -> new ArrayList<>()).add(c);
+		}
+		return map;
+	}
+
 	public Optional<Comentari> findById(String id) {
 		if (id == null) return Optional.empty();
 		return Optional.ofNullable(store.get(id));

@@ -59,8 +59,12 @@ public class AppStartupRunner implements ApplicationRunner {
             String[] emails = {"alice@example.com","bob@example.com","carol@example.com","dave@example.com","eve@example.com"};
             String[] passwords = {"pass1","pass2","pass3","pass4","pass5"};
             for (int i = 0; i < usernames.length; i++) {
-                boolean reg = userService.register(usernames[i], emails[i], passwords[i]);
-                LOG.info("Registered user {} -> {}", usernames[i], reg);
+                try {
+                    userService.register(usernames[i], emails[i], passwords[i]);
+                    LOG.info("Registered user {} -> success", usernames[i]);
+                } catch (RuntimeException ex) {
+                    LOG.warn("Failed to register user {}: {}", usernames[i], ex.getMessage());
+                }
             }
 
             // Create 9 videos distributed among users

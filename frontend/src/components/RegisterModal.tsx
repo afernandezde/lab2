@@ -1,57 +1,44 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import RegisterModal from './RegisterModal';
 
-interface LoginModalProps {
+interface RegisterModalProps {
   onClose: () => void;
+  onRegistered?: () => void;
 }
 
-export default function LoginModal({ onClose }: LoginModalProps) {
+export default function RegisterModal({ onClose, onRegistered }: RegisterModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess(false);
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8080/api/users/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
+      const res = await fetch(`http://localhost:8080/api/users/register?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&username=${encodeURIComponent(username)}`, {
         method: 'POST',
       });
       if (!res.ok) {
         const apiError = await res.text();
         setError(apiError);
       } else {
-        // show success message briefly before closing
         setSuccess(true);
-        setTimeout(() => onClose(), 1200);
+        setTimeout(() => {
+          if (typeof onRegistered === 'function') onRegistered();
+          else onClose();
+        }, 1200);
       }
     } catch (err) {
       setError('Network error.');
     }
     setLoading(false);
   };
-
-  if (showRegister) {
-    return (
-      <RegisterModal
-        // Close should hide the register modal AND close the parent login modal
-        onClose={() => {
-          setShowRegister(false);
-          onClose();
-        }}
-        onRegistered={() => {
-          setShowRegister(false);
-          onClose();
-        }}
-      />
-    );
-  }
 
   return createPortal(
     <div
@@ -75,7 +62,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
           padding: 24,
           boxShadow: '0 15px 40px rgba(0,0,0,0.35)',
           minWidth: 320,
-          minHeight: 320,
+          minHeight: 340,
           maxWidth: 400,
           display: 'flex',
           flexDirection: 'column',
@@ -114,12 +101,35 @@ export default function LoginModal({ onClose }: LoginModalProps) {
               textAlign: 'center',
             }}
           >
-            Sign in
+            Sign up
           </h2>
           <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16, textAlign: 'center' }}>
-            Sign in to access your videos and manage your account.
+            Create your account to access all features.
           </p>
-
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            style={{
+              width: '100%',
+              border: '1px solid #d1d5db',
+              borderRadius: 8,
+              padding: '10px 12px',
+              marginBottom: 12,
+              boxSizing: 'border-box',
+            }}
+            onFocus={e => {
+              const t = e.currentTarget;
+              t.style.borderColor = '#2563eb';
+              t.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.12)';
+            }}
+            onBlur={e => {
+              const t = e.currentTarget;
+              t.style.borderColor = '#d1d5db';
+              t.style.boxShadow = 'none';
+            }}
+          />
           <input
             type="email"
             placeholder="Email"
@@ -133,12 +143,12 @@ export default function LoginModal({ onClose }: LoginModalProps) {
               marginBottom: 12,
               boxSizing: 'border-box',
             }}
-            onFocus={(e) => {
+            onFocus={e => {
               const t = e.currentTarget;
               t.style.borderColor = '#2563eb';
               t.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.12)';
             }}
-            onBlur={(e) => {
+            onBlur={e => {
               const t = e.currentTarget;
               t.style.borderColor = '#d1d5db';
               t.style.boxShadow = 'none';
@@ -157,12 +167,12 @@ export default function LoginModal({ onClose }: LoginModalProps) {
               marginBottom: 16,
               boxSizing: 'border-box',
             }}
-            onFocus={(e) => {
+            onFocus={e => {
               const t = e.currentTarget;
               t.style.borderColor = '#2563eb';
               t.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.12)';
             }}
-            onBlur={(e) => {
+            onBlur={e => {
               const t = e.currentTarget;
               t.style.borderColor = '#d1d5db';
               t.style.boxShadow = 'none';
@@ -182,22 +192,28 @@ export default function LoginModal({ onClose }: LoginModalProps) {
               fontWeight: 400,
             }}
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? 'Registering...' : 'Sign up'}
           </button>
           {error && (
             <p style={{ color: '#ef4444', fontSize: 13, marginTop: 8, textAlign: 'center' }}>{error}</p>
           )}
           {success && (
-            <p style={{ color: '#22c55e', fontSize: 13, marginTop: 8, textAlign: 'center' }}>User signed in successfully!</p>
+            <p style={{ color: '#22c55e', fontSize: 13, marginTop: 8, textAlign: 'center' }}>User signed up successfully!</p>
           )}
+
+          {/* Link to go back to Sign in */}
           <p style={{ fontSize: 12, color: '#6b7280', marginTop: 12, textAlign: 'center' }}>
-            Don't have an account yet?{' '}
-            <span
-              style={{ color: '#2563eb', cursor: 'pointer', fontWeight: 600 }}
-              onClick={() => setShowRegister(true)}
+            Already have an account?{' '}
+            <a
+              href="#"
+              style={{ color: '#2563eb', cursor: 'pointer', fontWeight: 600, textDecoration: 'none' }}
+              onClick={(e) => {
+                e.preventDefault();
+                onClose();
+              }}
             >
-              Sign up
-            </span>
+              Sign in
+            </a>
           </p>
         </form>
       </div>

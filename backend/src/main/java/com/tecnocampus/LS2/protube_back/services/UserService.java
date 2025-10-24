@@ -29,16 +29,23 @@ public class UserService {
                 .toList();
     }
 
-    public boolean register(String username, String email, String password) {
-        if (repository.findByEmail(email).isPresent()) {
-            System.out.println("Error: ya existe un usuario con ese correo.");
-            return false;
-        }
+    public void register(String username, String email, String password) {
+        try {
+            if (repository.findByEmail(email).isPresent()) {
+                System.out.println("Error: ya existe un usuario con ese correo.");
+                throw new RuntimeException("Error: ya existe un usuario con ese correo.");
+            }
+            if (repository.findByUsername(username).isPresent()) {
+                System.out.println("Error: ya existe un usuario con ese nombre de usuario.");
+                throw new RuntimeException("Error: ya existe un usuario con ese nombre de usuario.");
+            }
 
-        User newUser = new User(username, email, password);
-        repository.save(newUser);
-        System.out.println("Usuario registrado con éxito. ID: " + newUser.getId());
-        return true;
+            User newUser = new User(username, email, password);
+            repository.save(newUser);
+            System.out.println("Usuario registrado con éxito. ID: " + newUser.getId());
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     public void login(String email, String password) {

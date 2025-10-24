@@ -30,11 +30,15 @@ public class UsersController {
     // Endpoint to register a new user
     @PostMapping("/register")
     public ResponseEntity<String> registerUser(@RequestParam String username, @RequestParam String email, @RequestParam String password) {
-        boolean success = userService.register(username, email, password);
-        if (success) {
+        try {
+            userService.register(username, email, password);
             return ResponseEntity.ok("User registered successfully.");
-        } else {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Error: a user with that email already exists.");
+        } catch (RuntimeException e) {
+            String msg = e.getMessage();
+            if (msg != null && (msg.contains("ya existe") || msg.toLowerCase().contains("exists") || msg.toLowerCase().contains("already"))) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(msg);
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(msg != null ? msg : "Internal server error");
         }
     }
 
@@ -46,12 +50,13 @@ public class UsersController {
             return ResponseEntity.ok("User logged in successfully.");
         } catch (RuntimeException e) {
             String msg = e.getMessage();
-            if (msg.contains("The email doesn't exist")) {
+            if (msg != null && (msg.toLowerCase().contains("email") && msg.toLowerCase().contains("register"))
+                    || (msg != null && msg.toLowerCase().contains("not registered"))) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(msg);
-            } else if (msg.contains("Incorrect password")) {
+            } else if (msg != null && msg.toLowerCase().contains("incorrect")) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(msg);
             } else {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(msg);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(msg != null ? msg : "Internal server error");
             }
         }
     }

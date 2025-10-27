@@ -20,7 +20,7 @@ function App() {
           style={{ position: 'fixed', top: 16, right: 16, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
           aria-label="Abrir inicio de sesión"
         >
-          <CircleUser size={50} color='white' strokeWidth={0.8} />
+          <CircleUser size={50} color="white" strokeWidth={0.8} />
         </button>
 
         {/* Modal de inicio de sesión */}
@@ -29,21 +29,17 @@ function App() {
         <header className="App-header">
           <img src="/protube-logo-removebg-preview.png" className="App-logo" alt="logo" />
         </header>
+
         <main>
           <Routes>
             <Route path="/" element={<ContentApp />} />
             <Route path="/video/:name" element={<VideoPage />} />
           </Routes>
         </main>
+
+        <Footer />
       </div>
     </BrowserRouter>
-      <header className="App-header">
-        <img src="/protube-logo-removebg-preview.png" className="App-logo" alt="logo" />
-        <ContentApp />
-      </header>
-
-      <Footer /> {/* added */}
-    </div>
   );
 }
 
@@ -59,16 +55,6 @@ function ContentApp() {
         </div>
       );
     case 'success':
-      return (
-        <>
-          <strong>Videos available:</strong>
-          <ul>
-            {value.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </>
-      );
       return <VideoGrid videos={value} />;
   }
   return <div>Idle...</div>;

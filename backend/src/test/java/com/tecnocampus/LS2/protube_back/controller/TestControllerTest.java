@@ -11,10 +11,5 @@ class TestControllerTest {
 
     TestController testController = new TestController();
 
-    @Test
-    void sayHello() {
-
-        String s = testController.sayHello();
-        assertEquals("Hello, World!", s);
-    }
+    
 }

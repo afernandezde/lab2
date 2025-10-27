@@ -5,9 +5,10 @@ import RegisterModal from './RegisterModal';
 
 interface LoginModalProps {
   onClose: () => void;
+  onLoggedIn?: () => void;
 }
 
-export default function LoginModal({ onClose }: LoginModalProps) {
+export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,7 +30,10 @@ export default function LoginModal({ onClose }: LoginModalProps) {
       } else {
         // show success message briefly before closing
         setSuccess(true);
-        setTimeout(() => onClose(), 1200);
+        setTimeout(() => {
+          if (typeof onLoggedIn === 'function') onLoggedIn();
+          else onClose();
+        }, 1200);
       }
     } catch (err) {
       setError('Network error.');
@@ -47,7 +51,8 @@ export default function LoginModal({ onClose }: LoginModalProps) {
         }}
         onRegistered={() => {
           setShowRegister(false);
-          onClose();
+          if (typeof onLoggedIn === 'function') onLoggedIn();
+          else onClose();
         }}
       />
     );

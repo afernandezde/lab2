@@ -1,6 +1,6 @@
 import './App.css';
 import { useAllVideos } from './useAllVideos';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CircleUser } from 'lucide-react';
 import LoginModal from './components/LoginModal';
 import RegisterModal from './components/RegisterModal';
@@ -19,6 +19,35 @@ function App() {
       return false;
     }
   });
+  const [username, setUsername] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('protube_username');
+    } catch (e) {
+      return null;
+    }
+  });
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function handleDocClick(e: MouseEvent) {
+      if (!userMenuRef.current) return;
+      const target = e.target as Node | null;
+      if (target && !userMenuRef.current.contains(target)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener('click', handleDocClick);
+    return () => document.removeEventListener('click', handleDocClick);
+  }, []);
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setUsername(null);
+    try {
+      localStorage.removeItem('protube_user');
+      localStorage.removeItem('protube_username');
+    } catch (e) {}
+  };
 
   return (
     <BrowserRouter>
@@ -27,9 +56,15 @@ function App() {
         {showLogin && (
           <LoginModal
             onClose={() => setShowLogin(false)}
-            onLoggedIn={() => {
+            onLoggedIn={(name?: string) => {
               setShowLogin(false);
               setIsAuthenticated(true);
+              if (name) {
+                setUsername(name);
+                try {
+                  localStorage.setItem('protube_username', name);
+                } catch (e) {}
+              }
               try {
                 localStorage.setItem('protube_user', '1');
               } catch (e) {}
@@ -69,10 +104,34 @@ function App() {
                 </button>
               </>
             ) : (
-              // user is authenticated: show only profile icon (could link to /profile later)
-              <Link to="/profile" aria-label="Perfil de usuario" style={{ color: 'white' }}>
-                <CircleUser size={34} color="white" strokeWidth={0.8} />
-              </Link>
+              // user is authenticated: show profile icon and username with dropdown menu
+              <div className="user-info" ref={userMenuRef}>
+                <button
+                  className="user-toggle"
+                  onClick={() => setUserMenuOpen(v => !v)}
+                  aria-haspopup="true"
+                  aria-expanded={userMenuOpen}
+                >
+                  <CircleUser size={28} color="white" strokeWidth={0.8} />
+                  <span className="user-name">{username ?? 'Perfil'}</span>
+                </button>
+
+                <div className={`user-menu ${userMenuOpen ? 'open' : ''}`} role="menu" aria-hidden={!userMenuOpen}>
+                  <Link to="/profile" className="user-menu-item" role="menuitem" onClick={() => setUserMenuOpen(false)}>
+                    Profile
+                  </Link>
+                  <button
+                    className="user-menu-item"
+                    role="menuitem"
+                    onClick={() => {
+                      handleLogout();
+                      setUserMenuOpen(false);
+                    }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </header>
@@ -88,9 +147,15 @@ function App() {
         {showRegister && (
           <RegisterModal
             onClose={() => setShowRegister(false)}
-            onRegistered={() => {
+            onRegistered={(name?: string) => {
               setShowRegister(false);
               setIsAuthenticated(true);
+              if (name) {
+                setUsername(name);
+                try {
+                  localStorage.setItem('protube_username', name);
+                } catch (e) {}
+              }
               try {
                 localStorage.setItem('protube_user', '1');
               } catch (e) {}

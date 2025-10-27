@@ -21,7 +21,7 @@ export default function VideoPage() {
 
   // Comments: simple client-side storage per video name
   const videoKey = paramName || 'unknown';
-  const [comments, setComments] = useState<Array<{ id: number; text: string; createdAt: number }>>([]);
+  const [comments, setComments] = useState<Array<{ id: number; username?: string; text: string; createdAt: number }>>([]);
   const [commentText, setCommentText] = useState('');
   const [isAuthenticated] = useState<boolean>(() => {
     try {
@@ -50,7 +50,14 @@ export default function VideoPage() {
     e.preventDefault();
     const text = commentText.trim();
     if (!text) return;
-    const next = [{ id: Date.now(), text, createdAt: Date.now() }, ...comments];
+    const currentUser = (() => {
+      try {
+        return localStorage.getItem('protube_username') || 'Usuario';
+      } catch (e) {
+        return 'Usuario';
+      }
+    })();
+    const next = [{ id: Date.now(), username: currentUser, text, createdAt: Date.now() }, ...comments];
     setComments(next);
     saveComments(next);
     setCommentText('');
@@ -99,7 +106,7 @@ export default function VideoPage() {
           ) : (
             comments.map(c => (
               <div className="comment" key={c.id}>
-                <div className="comment-meta">Usuario • {new Date(c.createdAt).toLocaleString()}</div>
+                <div className="comment-meta">{c.username || 'Usuario'} • {new Date(c.createdAt).toLocaleString()}</div>
                 <div className="comment-text">{c.text}</div>
               </div>
             ))

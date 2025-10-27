@@ -4,7 +4,8 @@ import { X } from 'lucide-react';
 
 interface RegisterModalProps {
   onClose: () => void;
-  onRegistered?: () => void;
+  // when registration succeeds, pass the username back to the parent
+  onRegistered?: (username?: string) => void;
 }
 
 export default function RegisterModal({ onClose, onRegistered }: RegisterModalProps) {
@@ -30,7 +31,7 @@ export default function RegisterModal({ onClose, onRegistered }: RegisterModalPr
       } else {
         setSuccess(true);
         setTimeout(() => {
-          if (typeof onRegistered === 'function') onRegistered();
+          if (typeof onRegistered === 'function') onRegistered(username);
           else onClose();
         }, 1200);
       }

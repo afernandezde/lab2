@@ -5,8 +5,10 @@ import { getEnv } from './utils/Env';
 type LoadingState = 'loading' | 'success' | 'error' | 'idle';
 
 const ALL_VIDEOS_URL = `${getEnv().API_BASE_URL}/videos`;
+const MEDIA_BASE_URL = getEnv().MEDIA_BASE_URL;
+export type VideoItem = { name: string; videoUrl: string; posterUrl: string; title?: string; description?: string };
 export function useAllVideos() {
-  const [value, setValue] = useState<string[]>([]);
+  const [value, setValue] = useState<VideoItem[]>([]);
   const [message, setMessage] = useState<string>('Loading...');
   const [loading, setLoading] = useState<LoadingState>('idle');
 
@@ -16,7 +18,43 @@ export function useAllVideos() {
         setLoading('loading');
         const response = await axios.get<string[]>(ALL_VIDEOS_URL);
         if (response.status === 200) {
-          setValue(response.data);
+          const mapped = await Promise.all(
+            response.data.map(async (u) => {
+              // Remove any path and extension for display name
+              const filename = u.split('/').pop() || u;
+              const base = filename.replace(/\.[^/.]+$/, ''); // remove extension
+              const name = base; // display name without extension
+              // Compute videoUrl (absolute URLs are kept; otherwise use backend media handler)
+              const videoUrl = (u.startsWith('http://') || u.startsWith('https://'))
+                ? u
+                : `${MEDIA_BASE_URL}/${filename}`;
+
+              // Poster: backend stores posters as <base>.webp (e.g. '1.webp')
+              const posterFilename = `${base}.webp`;
+              const posterUrl = (posterFilename.startsWith('http://') || posterFilename.startsWith('https://'))
+                ? posterFilename
+                : `${MEDIA_BASE_URL}/${posterFilename}`;
+
+              // Try to fetch metadata JSON at <base>.json
+              let title: string | undefined;
+              let description: string | undefined;
+              try {
+                const metaUrl = `${MEDIA_BASE_URL}/${base}.json`;
+                console.debug('Fetching metadata for', base, '->', metaUrl);
+                const metaResp = await axios.get(metaUrl);
+                if (metaResp.status === 200 && metaResp.data) {
+                  title = metaResp.data.title;
+                  description = metaResp.data.description;
+                }
+              } catch (e: any) {
+                console.debug('Metadata fetch failed for', base, (e && e.message) || e);
+                // ignore if metadata not present
+              }
+
+              return { name, videoUrl, posterUrl, title, description };
+            })
+          );
+          setValue(mapped);
         }
         setLoading('success');
       } catch (error: unknown) {

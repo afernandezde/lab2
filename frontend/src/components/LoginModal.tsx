@@ -5,9 +5,11 @@ import RegisterModal from './RegisterModal';
 
 interface LoginModalProps {
   onClose: () => void;
+  // optional callback receives username when login succeeds
+  onLoggedIn?: (username?: string) => void;
 }
 
-export default function LoginModal({ onClose }: LoginModalProps) {
+export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,7 +31,11 @@ export default function LoginModal({ onClose }: LoginModalProps) {
       } else {
         // show success message briefly before closing
         setSuccess(true);
-        setTimeout(() => onClose(), 1200);
+        setTimeout(() => {
+          // pass back the email as username for now (backend may supply real username)
+          if (typeof onLoggedIn === 'function') onLoggedIn(email || undefined);
+          else onClose();
+        }, 1200);
       }
     } catch (err) {
       setError('Network error.');
@@ -45,9 +51,10 @@ export default function LoginModal({ onClose }: LoginModalProps) {
           setShowRegister(false);
           onClose();
         }}
-        onRegistered={() => {
+        onRegistered={(registeredUsername?: string) => {
           setShowRegister(false);
-          onClose();
+          if (typeof onLoggedIn === 'function') onLoggedIn(registeredUsername);
+          else onClose();
         }}
       />
     );

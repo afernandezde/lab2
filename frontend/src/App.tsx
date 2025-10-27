@@ -1,27 +1,42 @@
 import './App.css';
 import { useAllVideos } from './useAllVideos';
 import { useState } from 'react';
-import { CircleUser, User } from 'lucide-react';
+import { CircleUser } from 'lucide-react';
 import LoginModal from './components/LoginModal';
+import VideoGrid from './components/VideoGrid';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import VideoPage from './pages/VideoPage';
 import Footer from './components/Footer'; // added
 
 function App() {
   const [showLogin, setShowLogin] = useState(false);
 
   return (
-    <div className="App">
-      {/* Icono de usuario arriba a la derecha */}
-      <button
-        onClick={() => setShowLogin(!showLogin)}
-        style={{ position: 'fixed', top: 16, right: 16, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-        aria-label="Abrir inicio de sesión"
-      >
-        <CircleUser size={50} color='white' strokeWidth={0.8} />
-      </button>
+    <BrowserRouter>
+      <div className="App">
+        {/* Icono de usuario arriba a la derecha */}
+        <button
+          onClick={() => setShowLogin(!showLogin)}
+          style={{ position: 'fixed', top: 16, right: 16, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+          aria-label="Abrir inicio de sesión"
+        >
+          <CircleUser size={50} color='white' strokeWidth={0.8} />
+        </button>
 
-      {/* Modal de inicio de sesión */}
-      {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
+        {/* Modal de inicio de sesión */}
+        {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
 
+        <header className="App-header">
+          <img src="/protube-logo-removebg-preview.png" className="App-logo" alt="logo" />
+        </header>
+        <main>
+          <Routes>
+            <Route path="/" element={<ContentApp />} />
+            <Route path="/video/:name" element={<VideoPage />} />
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
       <header className="App-header">
         <img src="/protube-logo-removebg-preview.png" className="App-logo" alt="logo" />
         <ContentApp />
@@ -54,6 +69,7 @@ function ContentApp() {
           </ul>
         </>
       );
+      return <VideoGrid videos={value} />;
   }
   return <div>Idle...</div>;
 }

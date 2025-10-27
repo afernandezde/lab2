@@ -37,5 +37,8 @@ public class MvcConfig implements WebMvcConfigurer {
                 .allowedOriginPatterns("*");
         registry.addMapping("/auth/**")
                 .allowedOriginPatterns("*");
+        // Allow the frontend to fetch metadata JSON and other media resources
+        registry.addMapping("/media/**")
+                .allowedOriginPatterns("*");
     }
 }

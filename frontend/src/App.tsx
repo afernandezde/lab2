@@ -7,7 +7,18 @@ import RegisterModal from './components/RegisterModal';
 import VideoGrid from './components/VideoGrid';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import VideoPage from './pages/VideoPage';
+import History from './pages/History';
+import Playlists from './pages/Playlists';
+import MyVideos from './pages/MyVideos';
+import WatchLater from './pages/WatchLater';
+import Liked from './pages/Liked';
+import Downloads from './pages/Downloads';
+import ExploreMusic from './pages/explore/Music';
+import ExploreMovies from './pages/explore/Movies';
+import ExploreLive from './pages/explore/Live';
+import ExploreGaming from './pages/explore/Gaming';
 import Footer from './components/Footer'; // added
+import Sidebar from './components/Sidebar';
 
 function App() {
   const [showLogin, setShowLogin] = useState(false);
@@ -52,6 +63,7 @@ function App() {
   return (
     <BrowserRouter>
       <div className="App">
+        <Sidebar />
         {/* Modal de inicio de sesión */}
         {showLogin && (
           <LoginModal
@@ -139,6 +151,16 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<ContentApp />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/playlists" element={<Playlists />} />
+            <Route path="/my-videos" element={<MyVideos />} />
+            <Route path="/watch-later" element={<WatchLater />} />
+            <Route path="/liked" element={<Liked />} />
+            <Route path="/downloads" element={<Downloads />} />
+            <Route path="/explore/music" element={<ExploreMusic />} />
+            <Route path="/explore/movies" element={<ExploreMovies />} />
+            <Route path="/explore/live" element={<ExploreLive />} />
+            <Route path="/explore/gaming" element={<ExploreGaming />} />
             <Route path="/video/:name" element={<VideoPage />} />
           </Routes>
         </main>

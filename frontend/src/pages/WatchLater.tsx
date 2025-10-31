@@ -21,7 +21,13 @@ const WatchLater: React.FC = () => {
       }
     };
     window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    // update in same tab via custom event
+    const onUpdate = (e: Event) => onStorage();
+    window.addEventListener('protube:update', onUpdate as EventListener);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('protube:update', onUpdate as EventListener);
+    };
   }, []);
 
   const items = list.map(name => videos.find(v => v.name === name) || { name, title: name, posterUrl: '' });

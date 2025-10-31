@@ -19,6 +19,8 @@ import ExploreLive from './pages/explore/Live';
 import ExploreGaming from './pages/explore/Gaming';
 import Footer from './components/Footer'; // added
 import Sidebar from './components/Sidebar';
+import Profile from './pages/Profile';
+import { useCallback } from 'react';
 
 function App() {
   const [showLogin, setShowLogin] = useState(false);
@@ -39,6 +41,27 @@ function App() {
   });
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Global toast listener so any page can fire a non-blocking message
+  useEffect(() => {
+    const onToast = (e: Event) => {
+      try {
+        // @ts-ignore
+        const msg = e?.detail?.message as string | undefined;
+        if (msg) setToast(msg);
+      } catch (e) {}
+    };
+    window.addEventListener('protube:toast', onToast as EventListener);
+    return () => window.removeEventListener('protube:toast', onToast as EventListener);
+  }, []);
+
+  // auto-dismiss global toast
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(id);
+  }, [toast]);
 
   useEffect(() => {
     function handleDocClick(e: MouseEvent) {
@@ -162,10 +185,12 @@ function App() {
             <Route path="/explore/live" element={<ExploreLive />} />
             <Route path="/explore/gaming" element={<ExploreGaming />} />
             <Route path="/video/:name" element={<VideoPage />} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </main>
 
         <Footer />
+  {toast && <div className="toast" role="status">{toast}</div>}
         {showRegister && (
           <RegisterModal
             onClose={() => setShowRegister(false)}

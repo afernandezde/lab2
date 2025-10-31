@@ -71,7 +71,13 @@ export default function VideoPage() {
       const exists = arr.includes(videoKey);
       const next = exists ? arr.filter(x => x !== videoKey) : [videoKey, ...arr];
       localStorage.setItem('protube_liked', JSON.stringify(next));
-      setLiked(!exists);
+  setLiked(!exists);
+  // feedback
+  if (!exists) showToast("Afegit a M'agrada"); else showToast("Eliminat de M'agrada");
+      // notify other components in same tab
+      try {
+        window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'liked', videoKey } }));
+      } catch (e) {}
       console.debug('toggleLiked', { videoKey, exists, next });
     } catch (e) {
       console.error('toggleLiked error', e);
@@ -85,7 +91,11 @@ export default function VideoPage() {
       const exists = arr.includes(videoKey);
       const next = exists ? arr.filter(x => x !== videoKey) : [videoKey, ...arr];
       localStorage.setItem('protube_watch_later', JSON.stringify(next));
-      setWatchLater(!exists);
+  setWatchLater(!exists);
+  if (!exists) showToast('Afegit a Veure més tard'); else showToast('Eliminat de Veure més tard');
+      try {
+        window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'watch_later', videoKey } }));
+      } catch (e) {}
       console.debug('toggleWatchLater', { videoKey, exists, next });
     } catch (e) {
       console.error('toggleWatchLater error', e);
@@ -93,24 +103,86 @@ export default function VideoPage() {
   };
 
   const handleAddToPlaylist = async () => {
-    // Prompt-based flow: show existing playlists in the prompt so the user can pick one
+    // Open the popover to let the user pick or create a playlist (non-blocking)
+    setShowPlaylistPopover(true);
+  };
+
+  // Popover UI state for adding to playlists (preferred UX)
+  const [playlistsMap, setPlaylistsMap] = useState<Record<string, string[]>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('protube_playlists') || '{}');
+    } catch (e) {
+      return {};
+    }
+  });
+  const [showPlaylistPopover, setShowPlaylistPopover] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
+
+  // keep playlistsMap in sync with storage and other tabs
+  useEffect(() => {
+    const onStorage = () => {
+      try {
+        setPlaylistsMap(JSON.parse(localStorage.getItem('protube_playlists') || '{}'));
+      } catch (e) {
+        setPlaylistsMap({});
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    const onUpdate = (e: Event) => onStorage();
+    window.addEventListener('protube:update', onUpdate as EventListener);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('protube:update', onUpdate as EventListener);
+    };
+  }, []);
+
+  const addToExistingPlaylist = (name: string) => {
     try {
       const raw = localStorage.getItem('protube_playlists') || '{}';
       const obj = JSON.parse(raw) as Record<string, string[]>;
-      const existing = Object.keys(obj);
-      const promptMsg = existing.length
-        ? `Llistes existents: ${existing.join(', ')}. Escriu un nom per afegir o crear:`
-        : 'No hi ha llistes. Escriu nom per crear:';
-      const name = window.prompt(promptMsg);
-      if (!name) return;
       const list = obj[name] || [];
       if (!list.includes(videoKey)) {
         obj[name] = [videoKey, ...list];
         localStorage.setItem('protube_playlists', JSON.stringify(obj));
-        alert('Afegit a la playlist: ' + name);
+        setPlaylistsMap(obj);
+        try { window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'playlists', name } })); } catch (e) {}
+        showToast(`Afegit a la playlist: ${name}`);
       } else {
-        alert('Aquest vídeo ja està a la playlist: ' + name);
+        // show a blocking alert as requested
+        try { window.alert('Aquest vídeo ja està a la playlist'); } catch (e) { /* ignore */ }
+        showToast('Aquest vídeo ja està a la playlist');
       }
+      setShowPlaylistPopover(false);
+    } catch (e) {}
+  };
+
+  const createAndAddPlaylist = (name: string) => {
+    if (!name) return;
+    try {
+      const raw = localStorage.getItem('protube_playlists') || '{}';
+      const obj = JSON.parse(raw) as Record<string, string[]>;
+      // If playlist name already exists, inform the user and don't silently overwrite
+      if (Object.prototype.hasOwnProperty.call(obj, name)) {
+        // show blocking alert to notify user
+        try { window.alert('Ja existeix una playlist amb aquest nom. Tria un altre nom o selecciona l\'existent.'); } catch (e) {}
+        showToast('Ja existeix una playlist amb aquest nom. Tria un altre nom o selecciona l\'existent.');
+      } else {
+        obj[name] = [videoKey];
+        localStorage.setItem('protube_playlists', JSON.stringify(obj));
+        setPlaylistsMap(obj);
+        try { window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'playlists', name } })); } catch (e) {}
+        showToast(`Creada i afegida a la playlist: ${name}`);
+      }
+      setNewPlaylistName('');
+      setShowPlaylistPopover(false);
+    } catch (e) {}
+  };
+
+  // Use global protube:toast event for non-blocking feedback so the app
+  // shows a single, consistent toast. Helper to dispatch it.
+  const showToast = (msg: string) => {
+    try {
+      window.dispatchEvent(new CustomEvent('protube:toast', { detail: { message: msg } }));
     } catch (e) {}
   };
 
@@ -168,7 +240,7 @@ export default function VideoPage() {
           {description ? <p className="video-description">{description}</p> : null}
         </div>
 
-        <div className="video-actions" style={{ display: 'flex', gap: 8 }}>
+  <div className="video-actions" style={{ display: 'flex', gap: 8, position: 'relative' }}>
           <button
             className={`action-btn ${liked ? 'active' : ''}`}
             onClick={toggleLiked}
@@ -189,10 +261,40 @@ export default function VideoPage() {
             <span className="action-text">Més tard</span>
           </button>
 
-          <button className="action-btn" onClick={handleAddToPlaylist} title="Afegir a playlist">
+          <button className="action-btn" onClick={() => setShowPlaylistPopover(v => !v)} title="Afegir a playlist">
             <PlusSquare size={18} />
             <span className="action-text">Afegir</span>
           </button>
+
+          {showPlaylistPopover && (
+            <div className="playlist-popover" role="dialog" aria-label="Selecciona o crea una playlist">
+              <h4>Selecciona una playlist</h4>
+              {Object.keys(playlistsMap).length === 0 ? (
+                <div style={{ color: '#6b7280', marginBottom: 8 }}>No hi ha llistes encara.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {Object.keys(playlistsMap).map(name => (
+                    <div key={name} className="playlist-item" onClick={() => addToExistingPlaylist(name)}>
+                      <span>{name}</span>
+                      <small style={{ color: '#6b7280' }}>{playlistsMap[name].length} vídeos</small>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ height: 1, background: '#eef2f7', margin: '8px 0' }} />
+
+              <div className="playlist-create">
+                <input
+                  aria-label="Nom nova playlist"
+                  value={newPlaylistName}
+                  onChange={e => setNewPlaylistName(e.target.value)}
+                  placeholder="Nou nom de playlist"
+                />
+                <button className="action-btn" onClick={() => createAndAddPlaylist(newPlaylistName)}>Crear</button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -228,6 +330,7 @@ export default function VideoPage() {
           )}
         </div>
       </section>
+      {/* global toast is rendered in App.tsx */}
     </div>
   );
 }

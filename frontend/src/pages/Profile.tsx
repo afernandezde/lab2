@@ -1,60 +1,88 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+
+type ChannelVideo = {
+  name: string; // unique key / filename
+  title: string;
+  posterUrl?: string;
+  createdAt: number;
+  published?: boolean;
+};
+
+type Post = {
+  id: string;
+  text: string;
+  createdAt: number;
+};
+
+const STORAGE_KEY = 'protube_channel_videos';
+const POSTS_KEY = 'protube_channel_posts';
 
 const Profile: React.FC = () => {
   const username = (() => {
     try { return localStorage.getItem('protube_username') || 'Mi canal'; } catch (e) { return 'Mi canal'; }
   })();
 
-  const [postText, setPostText] = useState('');
-  const [posts, setPosts] = useState<Array<{ id: number; text: string; createdAt: number; author?: string }>>(() => {
-    try { return JSON.parse(localStorage.getItem('protube_channel_posts') || '[]'); } catch (e) { return []; }
+  const [videos, setVideos] = useState<ChannelVideo[]>(() => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch (e) { return []; }
   });
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [postText, setPostText] = useState('');
+  const [posts, setPosts] = useState<Post[]>(() => {
+    try { return JSON.parse(localStorage.getItem(POSTS_KEY) || '[]'); } catch (e) { return []; }
+  });
+  const postTextRef = useRef<HTMLTextAreaElement | null>(null);
+  const location = useLocation();
 
   useEffect(() => {
-    try { localStorage.setItem('protube_channel_posts', JSON.stringify(posts)); } catch (e) {}
-  }, [posts]);
+    const onStorage = () => {
+      try { setVideos(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')); } catch (e) { setVideos([]); }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
-  const dispatchToast = (msg: string) => {
-    try { window.dispatchEvent(new CustomEvent('protube:toast', { detail: { message: msg } })); } catch (e) {}
-  };
-
-  const handlePublish = () => {
-    const text = postText.trim();
-    if (!text) return dispatchToast('El text està buit');
-    const next = [{ id: Date.now(), text, createdAt: Date.now(), author: username }, ...posts];
-    setPosts(next);
-    setPostText('');
-    dispatchToast('Publicació creada');
-  };
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files && e.target.files[0];
-    if (!f) return;
-    // Save a lightweight record of uploaded video
-    try {
-      const raw = localStorage.getItem('protube_channel_videos') || '[]';
-      const arr = JSON.parse(raw) as Array<any>;
-      const entry = { id: Date.now(), name: f.name, title: f.name, uploadedAt: Date.now() };
-      arr.unshift(entry);
-      localStorage.setItem('protube_channel_videos', JSON.stringify(arr));
-      dispatchToast('Vídeo pujat correctament');
-    } catch (e) {
-      dispatchToast('Error en pujar el vídeo');
+  // focus inputs when navigating from header create menu using hash anchors
+  useEffect(() => {
+    const h = location.hash || window.location.hash;
+    if (h === '#post') {
+      setTimeout(() => postTextRef.current?.focus(), 50);
     }
-    // clear input so same file can be selected again
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [location]);
+
+  const saveVideos = (next: ChannelVideo[]) => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); setVideos(next); } catch (e) {}
   };
 
-  const handleGoLive = () => {
-    // placeholder
-    if (!window.confirm('Vols iniciar una emision en directe (simulada)?')) return;
-    dispatchToast('Emissió en directe iniciada (simulada)');
+  const handleDelete = (name: string) => {
+    if (!window.confirm('Eliminar aquest vídeo?')) return;
+    const next = videos.filter(v => v.name !== name);
+    saveVideos(next);
+  };
+
+  const togglePublished = (name: string) => {
+    const next = videos.map(v => v.name === name ? { ...v, published: !v.published } : v);
+    saveVideos(next);
+  };
+
+  const savePosts = (next: Post[]) => {
+    try { localStorage.setItem(POSTS_KEY, JSON.stringify(next)); setPosts(next); } catch (e) {}
+  };
+
+  const createPost = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const text = postText.trim();
+    if (!text) return; // no empty posts
+    const p: Post = { id: String(Date.now()) + Math.random().toString(36).slice(2,8), text, createdAt: Date.now() };
+    const next = [p, ...posts];
+    savePosts(next);
+    setPostText('');
+  };
+
+  const deletePost = (id: string) => {
+    if (!window.confirm('Eliminar aquesta publicació?')) return;
+    const next = posts.filter(p => p.id !== id);
+    savePosts(next);
   };
 
   return (
@@ -64,7 +92,7 @@ const Profile: React.FC = () => {
         <div className="channel-meta">
           <h1 className="channel-title">{username}</h1>
           <div className="channel-handle">@{username.replace(/\s+/g, '')}</div>
-          <p className="channel-desc">Més informació sobre aquest canal ...<span style={{ color: '#0b66ff', marginLeft: 6 }}>més</span></p>
+          <p className="channel-desc">Més informació sobre aquest canal ... <span style={{ color: '#0b66ff', marginLeft: 6 }}>més</span></p>
 
           <div className="channel-actions">
             <button className="action-btn">Personalitza el canal</button>
@@ -74,48 +102,57 @@ const Profile: React.FC = () => {
       </div>
 
       <div className="channel-postbox">
-        <div className="postbox-header">
-          <div className="postbox-avatar">{(username || 'U').charAt(0).toUpperCase()}</div>
-          <textarea placeholder="En què estàs pensant?" rows={3} value={postText} onChange={e => setPostText(e.target.value)} />
-        </div>
-        <div className="postbox-actions">
-          <div className="postbox-tools">
-            <button className="ghost">Imatge</button>
-            <button className="ghost">Enquesta d'imatge</button>
-            <button className="ghost">Enquesta de text</button>
-            <button className="ghost">Qüestionari</button>
-            <button className="ghost" onClick={handleUploadClick}>Vídeo</button>
-            <input ref={fileInputRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={handleFile} />
-            <button className="ghost" onClick={handleGoLive}>Emet en directe</button>
+        <form onSubmit={createPost} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="postbox-header">
+            <div className="postbox-avatar">{(username || 'U').charAt(0).toUpperCase()}</div>
+            <textarea ref={postTextRef} value={postText} onChange={e => setPostText(e.target.value)} placeholder="Crea una publicació" rows={2} />
           </div>
-          <div>
-            <button className="action-btn" onClick={handlePublish}>Publica</button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ color: '#6b7280' }}>{posts.length} publicacions</div>
+            <div>
+              <button className="action-btn" type="submit">Publica</button>
+            </div>
           </div>
-        </div>
+        </form>
       </div>
 
-      <div className="channel-tabs">
+      <div className="channel-tabs" style={{ marginTop: 12 }}>
         <button className="tab active">Publicades</button>
         <button className="tab">Programades</button>
         <button className="tab">Arxivades</button>
       </div>
 
       <div style={{ marginTop: 16 }}>
-        {posts.length === 0 ? (
-          <div style={{ padding: 24, border: '1px solid #eef2f7', borderRadius: 12 }}>
-            <p style={{ margin: 0, color: '#6b7280' }}>Aquí es mostraran els vídeos publicats del canal i publicacions.</p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {posts.map(p => (
-              <div key={p.id} style={{ padding: 12, borderRadius: 8, background: '#fff', border: '1px solid #eef2f7' }}>
-                <div style={{ fontWeight: 700 }}>{p.author}</div>
-                <div style={{ color: '#6b7280', fontSize: 13 }}>{new Date(p.createdAt).toLocaleString()}</div>
-                <div style={{ marginTop: 8 }}>{p.text}</div>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="channel-tabs" style={{ marginTop: 0 }}>
+          <button className="tab active">Publicades</button>
+          <button className="tab">Programades</button>
+          <button className="tab">Arxivades</button>
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          {posts.length === 0 ? (
+            <div style={{ padding: 24, border: '1px solid #eef2f7', borderRadius: 12 }}>
+              <p style={{ margin: 0, color: '#6b7280' }}>No tens publicacions encara. Crea la primera!</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: 12 }}>
+              {posts.map(p => (
+                <div key={p.id} style={{ padding: 12, borderRadius: 8, background: '#fff' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 700 }}>{username}</div>
+                      <div style={{ color: '#6b7280', fontSize: 13 }}>{new Date(p.createdAt).toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <button className="action-btn ghost" onClick={() => deletePost(p.id)}>Eliminar</button>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 8 }}>{p.text}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

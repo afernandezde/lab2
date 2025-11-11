@@ -2,19 +2,16 @@ package com.tecnocampus.LS2.protube_back.controller;
 
 import com.tecnocampus.LS2.protube_back.controller.dto.videoSaveDTO;
 import com.tecnocampus.LS2.protube_back.controller.mapper.VideoMapper;
+import com.tecnocampus.LS2.protube_back.domain.Video;
 import com.tecnocampus.LS2.protube_back.services.VideoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
-import com.tecnocampus.LS2.protube_back.domain.Video;
 
 @RestController
 @RequestMapping("/api/videos")
@@ -26,7 +23,6 @@ public class VideosController {
     @GetMapping("")
     public ResponseEntity<List<String>> getVideos() {
         return ResponseEntity.ok().body(videoService.getVideos());
-
     }
 
     @PostMapping("/save")
@@ -42,6 +38,26 @@ public class VideosController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(video.getTitle());
+    }
+
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<videoSaveDTO> uploadVideo(
+            @RequestPart("file") MultipartFile file,
+            @RequestPart(value = "meta", required = false) videoSaveDTO meta,
+            @RequestParam(value = "published", required = false, defaultValue = "false") boolean published
+    ) {
+        try {
+            String userId = meta != null ? meta.userId() : null;
+            String title = meta != null ? meta.title() : null;
+            String description = meta != null ? meta.description() : null;
+
+            Video saved = videoService.uploadAndSave(file, userId, title, description, published);
+            return ResponseEntity.ok(VideoMapper.toVideoSaveDTO(saved));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @GetMapping("/all")

@@ -52,26 +52,37 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
     setPreviewUrl(urls[0] || null);
   };
 
-  const saveAll = (publish: boolean) => {
+  // NEW: upload to backend API using multipart/form-data with DTO in "meta"
+  const saveAll = async (publish: boolean) => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY) || '[]';
-      let arr = JSON.parse(raw) as any[];
-      // copy playlists once and update
-      const rawp = localStorage.getItem('protube_playlists') || '{}';
-      const playlistsObj = JSON.parse(rawp) as Record<string, string[]>;
-      items.forEach(it => {
-        const record = { name: it.file.name, title: it.title, posterUrl: it.posterUrl || '', description: it.description, createdAt: Date.now(), published: publish };
-        arr = [record, ...arr.filter(a => a.name !== record.name)];
-          // no playlist support here (handled elsewhere)
-        try { window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'channel_upload' } })); } catch (e) {}
-      });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-      try { localStorage.setItem('protube_playlists', JSON.stringify(playlistsObj)); } catch (e) {}
-      try { window.dispatchEvent(new CustomEvent('protube:toast', { detail: { message: publish ? 'Vídeos publicats' : 'Vídeos desats com a privat' } })); } catch (e) {}
+      const userId = localStorage.getItem('protube_user_id') || 'unknown';
+
+      const results = await Promise.all(items.map(async (it) => {
+        const meta = {
+          userId,
+          title: it.title || it.file.name,
+          description: it.description || '',
+          fileName: it.file.name
+        };
+        const form = new FormData();
+        form.append('file', it.file);
+        form.append('meta', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+        form.append('published', String(publish));
+
+        const res = await fetch('/api/videos/upload', { method: 'POST', body: form });
+        return res.ok;
+      }));
+
+      const allOk = results.every(Boolean);
+      try {
+        window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'channel_upload' } }));
+        window.dispatchEvent(new CustomEvent('protube:toast', { detail: { message: allOk ? (publish ? 'Vídeos publicats' : 'Vídeos desats') : 'Alguns errors en pujar' } }));
+      } catch (e) {}
     } catch (e) {
-      try { window.alert('Error desant els vídeos'); } catch (e) {}
+      try { window.alert('Error uploading the videos'); } catch {}
+    } finally {
+      onClose();
     }
-    onClose();
   };
 
   if (items.length === 0) {

@@ -60,4 +60,20 @@ public class UserController {
             }
         }
     }
+
+    // Endpoint to get te username by email
+    @GetMapping("/username")
+    public ResponseEntity<String> getUsernameByEmail(@RequestParam String email) {
+        try {
+            return ResponseEntity.ok(userService.getUsernameByEmail(email));
+        } catch (RuntimeException e) {
+            String msg = e.getMessage();
+            if (msg != null && (msg.toLowerCase().contains("email") && msg.toLowerCase().contains("register"))
+                    || (msg != null && msg.toLowerCase().contains("not registered"))) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(msg);
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(msg != null ? msg : "Internal server error");
+            }
+        }
+    }
 }

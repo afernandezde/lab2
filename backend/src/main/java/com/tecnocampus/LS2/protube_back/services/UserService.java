@@ -64,4 +64,13 @@ public class UserService {
             throw new RuntimeException(e.getMessage());
         }
     }
+
+    public String getUsernameByEmail(String email) {
+        Optional<User> userOpt = repository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            System.out.println("Error: el correo no existe.");
+            throw new RuntimeException("This email is not registered.");
+        }
+        return userOpt.get().getUsername();
+    }
 }

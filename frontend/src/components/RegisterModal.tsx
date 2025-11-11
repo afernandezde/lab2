@@ -6,9 +6,11 @@ interface RegisterModalProps {
   onClose: () => void;
   // when registration succeeds, pass the username back to the parent
   onRegistered?: (username?: string) => void;
+  // when user wants to go back to the login modal without closing everything
+  onBackToLogin?: () => void;
 }
 
-export default function RegisterModal({ onClose, onRegistered }: RegisterModalProps) {
+export default function RegisterModal({ onClose, onRegistered, onBackToLogin }: RegisterModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -210,7 +212,12 @@ export default function RegisterModal({ onClose, onRegistered }: RegisterModalPr
               style={{ color: '#2563eb', cursor: 'pointer', fontWeight: 600, textDecoration: 'none' }}
               onClick={(e) => {
                 e.preventDefault();
-                onClose();
+                // prefer a callback that returns to the login modal if provided
+                if (typeof onBackToLogin === 'function') {
+                  onBackToLogin();
+                } else {
+                  onClose();
+                }
               }}
             >
               Sign in

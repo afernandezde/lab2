@@ -116,12 +116,6 @@ const Profile: React.FC = () => {
         </form>
       </div>
 
-      <div className="channel-tabs" style={{ marginTop: 12 }}>
-        <button className="tab active">Publicades</button>
-        <button className="tab">Programades</button>
-        <button className="tab">Arxivades</button>
-      </div>
-
       <div style={{ marginTop: 16 }}>
         <div className="channel-tabs" style={{ marginTop: 0 }}>
           <button className="tab active">Publicades</button>

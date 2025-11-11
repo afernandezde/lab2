@@ -17,9 +17,10 @@ import ExploreMusic from './pages/explore/Music';
 import ExploreMovies from './pages/explore/Movies';
 import ExploreLive from './pages/explore/Live';
 import ExploreGaming from './pages/explore/Gaming';
+import Profile from './pages/Profile';
 import Footer from './components/Footer'; // added
 import Sidebar from './components/Sidebar';
-import Profile from './pages/Profile';
+import UploadModal from './components/UploadModal';
 import { useCallback } from 'react';
 
 function App() {
@@ -41,6 +42,9 @@ function App() {
   });
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const createRef = useRef<HTMLDivElement | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   // Global toast listener so any page can fire a non-blocking message
@@ -53,7 +57,15 @@ function App() {
       } catch (e) {}
     };
     window.addEventListener('protube:toast', onToast as EventListener);
-    return () => window.removeEventListener('protube:toast', onToast as EventListener);
+    const onOpenUpload = () => setUploadOpen(true);
+    const onCloseUpload = () => setUploadOpen(false);
+    window.addEventListener('protube:open-upload', onOpenUpload as EventListener);
+    window.addEventListener('protube:close-upload', onCloseUpload as EventListener);
+    return () => {
+      window.removeEventListener('protube:toast', onToast as EventListener);
+      window.removeEventListener('protube:open-upload', onOpenUpload as EventListener);
+      window.removeEventListener('protube:close-upload', onCloseUpload as EventListener);
+    };
   }, []);
 
   // auto-dismiss global toast
@@ -67,8 +79,13 @@ function App() {
     function handleDocClick(e: MouseEvent) {
       if (!userMenuRef.current) return;
       const target = e.target as Node | null;
-      if (target && !userMenuRef.current.contains(target)) {
-        setUserMenuOpen(false);
+      if (target) {
+        if (!userMenuRef.current.contains(target)) {
+          setUserMenuOpen(false);
+        }
+        if (createRef.current && !createRef.current.contains(target)) {
+          setCreateOpen(false);
+        }
       }
     }
     document.addEventListener('click', handleDocClick);
@@ -114,6 +131,25 @@ function App() {
             </Link>
           </div>
           <div className="header-right">
+                <div className="create-wrapper" ref={createRef}>
+                  <button
+                    className="create-button"
+                    onClick={() => setCreateOpen(v => !v)}
+                    aria-haspopup="true"
+                    aria-expanded={createOpen}
+                    aria-label="Crear"
+                  >
+                    <span className="create-plus">+</span>
+                    <span className="create-text">Crea</span>
+                  </button>
+                  {createOpen && (
+                    <div className="create-menu" role="menu" aria-label="Crear">
+                      <button className="create-menu-item" role="menuitem" onClick={() => { setCreateOpen(false); try { window.dispatchEvent(new CustomEvent('protube:open-upload')); } catch (e) {} }}>Penja un vídeo</button>
+                      <button className="create-menu-item" role="menuitem" onClick={() => { setCreateOpen(false); try { window.alert('Funcionalitat de streaming no implementada'); } catch (e) {} }}>Emet en directe</button>
+                      <button className="create-menu-item" role="menuitem" onClick={() => { setCreateOpen(false); window.location.hash = '#post'; window.location.pathname = '/profile'; }}>Crea una publicació</button>
+                    </div>
+                  )}
+                </div>
             {!isAuthenticated ? (
               <>
                 <button
@@ -174,6 +210,7 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<ContentApp />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/history" element={<History />} />
             <Route path="/playlists" element={<Playlists />} />
             <Route path="/my-videos" element={<MyVideos />} />
@@ -189,8 +226,9 @@ function App() {
           </Routes>
         </main>
 
-        <Footer />
+  <Footer />
   {toast && <div className="toast" role="status">{toast}</div>}
+  {uploadOpen && <UploadModal onClose={() => setUploadOpen(false)} />}
         {showRegister && (
           <RegisterModal
             onClose={() => setShowRegister(false)}

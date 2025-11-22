@@ -94,7 +94,10 @@ function App() {
     setUsername(null);
     try {
       localStorage.removeItem('protube_user');
+      localStorage.removeItem('protube_user_id');
       localStorage.removeItem('protube_username');
+      // notify other components in the same tab to refresh auth-dependent state
+      try { window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'auth', loggedIn: false } })); } catch (e) {}
     } catch (e) {}
   };
 

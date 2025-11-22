@@ -12,7 +12,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -63,8 +62,8 @@ public class VideoService {
         return videoRepository.findAll();
     }
 
-    // Upload + persist using DTO meta; also writes thumbnail .webp and metadata .json alongside the video file
-    public videoSaveDTO uploadAndSave(MultipartFile file, videoSaveDTO meta, boolean published) throws IOException {
+    // Upload + persist using DTO meta; writes thumbnail .webp (generated or from uploaded image)
+    public videoSaveDTO uploadAndSave(MultipartFile file, MultipartFile thumbnail, videoSaveDTO meta, boolean published) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("No file provided");
         }
@@ -100,20 +99,24 @@ public class VideoService {
         Video toSave = new Video(userId, title, description, storedFileName);
         Video saved = saveVideo(toSave);
 
-        // Generate thumbnail and JSON metadata next to the video
+        // Thumbnail logic (uploaded OR auto-generated)
         String baseName = storedFileName.replaceFirst("\\.[^.]+$", "");
         Path thumbPath = storeDir.resolve(baseName + ".webp");
-        Path jsonPath = storeDir.resolve(baseName + ".json");
-        try {
-            generateThumbnail(target, thumbPath);
-        } catch (Exception e) {
-            // If thumbnail generation fails, create an empty placeholder file
-            try { if (!Files.exists(thumbPath)) Files.createFile(thumbPath); } catch (Exception ignored) {}
-        }
-        try {
-            writeMetadataJson(saved, target, jsonPath);
-        } catch (Exception e) {
-            // best-effort; ignore JSON write failures
+        if (thumbnail != null && !thumbnail.isEmpty()) {
+            try {
+                // Attempt to convert user-supplied image to webp (scale to width 320 keeping aspect)
+                Path tempThumb = storeDir.resolve(UUID.randomUUID() + "_tmp_thumb_upload");
+                try (InputStream tin = thumbnail.getInputStream()) {
+                    Files.copy(tin, tempThumb, StandardCopyOption.REPLACE_EXISTING);
+                }
+                convertImageToWebp(tempThumb, thumbPath);
+                Files.deleteIfExists(tempThumb);
+            } catch (Exception ex) {
+                // Fallback: generate from video
+                try { generateThumbnail(target, thumbPath); } catch (Exception ignore) { createEmptyPlaceholder(thumbPath); }
+            }
+        } else {
+            try { generateThumbnail(target, thumbPath); } catch (Exception e) { createEmptyPlaceholder(thumbPath); }
         }
 
         return VideoMapper.toVideoSaveDTO(saved);
@@ -122,7 +125,7 @@ public class VideoService {
     // Backwards-compatible overload (delegates to DTO-based method)
     public Video uploadAndSave(MultipartFile file, String userId, String title, String description, boolean published) throws IOException {
         videoSaveDTO meta = new videoSaveDTO(userId, title, description, null);
-        videoSaveDTO savedDto = uploadAndSave(file, meta, published);
+        videoSaveDTO savedDto = uploadAndSave(file, null, meta, published);
         // convert back to entity if required by existing callers
         return VideoMapper.toVideo(savedDto);
     }
@@ -141,66 +144,18 @@ public class VideoService {
         if (code != 0) throw new IOException("ffmpeg exited with code " + code);
     }
 
-    private void writeMetadataJson(Video saved, Path inputVideo, Path outputJson) throws IOException, InterruptedException {
-        // Try to gather media info with ffprobe; fall back silently if unavailable
-        Integer width = null; Integer height = null; Double duration = null;
-        try {
-            // width x height
-            ProcessBuilder dimPb = new ProcessBuilder(
-                    "ffprobe", "-v", "error", "-select_streams", "v:0",
-                    "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0",
-                    inputVideo.toString()
-            );
-            dimPb.redirectErrorStream(true);
-            Process dimProc = dimPb.start();
-            String dimOut = new String(dimProc.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
-            dimProc.waitFor();
-            if (dimOut.contains("x")) {
-                String[] parts = dimOut.split("x");
-                width = Integer.parseInt(parts[0].trim());
-                height = Integer.parseInt(parts[1].trim());
-            }
-            // duration
-            ProcessBuilder durPb = new ProcessBuilder(
-                    "ffprobe", "-v", "error", "-show_entries", "format=duration",
-                    "-of", "default=noprint_wrappers=1:nokey=1", inputVideo.toString()
-            );
-            durPb.redirectErrorStream(true);
-            Process durProc = durPb.start();
-            String durOut = new String(durProc.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
-            durProc.waitFor();
-            if (!durOut.isEmpty()) {
-                duration = Double.parseDouble(durOut);
-            }
-        } catch (Exception ignored) {}
-
-        long ts = System.currentTimeMillis() / 1000L;
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\n");
-        sb.append("  \"id\": \"").append(saved.getVideoId()).append("\",\n");
-        if (width != null) sb.append("  \"width\": ").append(width).append(",\n"); else sb.append("  \"width\": null,\n");
-        if (height != null) sb.append("  \"height\": ").append(height).append(",\n"); else sb.append("  \"height\": null,\n");
-        if (duration != null) sb.append("  \"duration\": ").append(duration).append(",\n"); else sb.append("  \"duration\": null,\n");
-        sb.append("  \"title\": ").append(jsonString(saved.getTitle())).append(",\n");
-        sb.append("  \"user\": ").append(jsonString(saved.getUserId())).append(",\n");
-        sb.append("  \"timestamp\": ").append(ts).append(",\n");
-        sb.append("  \"meta\": {\n");
-        sb.append("    \"description\": ").append(jsonString(saved.getDescription())).append(",\n");
-        sb.append("    \"categories\": [],\n");
-        sb.append("    \"tags\": [],\n");
-        sb.append("    \"view_count\": 0,\n");
-        sb.append("    \"like_count\": 0,\n");
-        sb.append("    \"channel\": ").append(jsonString(saved.getUserId())).append(",\n");
-        sb.append("    \"channel_follower_count\": 0,\n");
-        sb.append("    \"comments\": []\n");
-        sb.append("  }\n");
-        sb.append("}\n");
-        Files.writeString(outputJson, sb.toString(), StandardCharsets.UTF_8);
+    private void convertImageToWebp(Path inputImage, Path outputWebp) throws IOException, InterruptedException {
+        ProcessBuilder pb = new ProcessBuilder(
+                "ffmpeg", "-y", "-i", inputImage.toString(), "-vf", "scale=320:-1", outputWebp.toString()
+        );
+        pb.redirectErrorStream(true);
+        Process p = pb.start();
+        p.getInputStream().transferTo(OutputStream.nullOutputStream());
+        int code = p.waitFor();
+        if (code != 0) throw new IOException("ffmpeg (image->webp) exited with code " + code);
     }
 
-    private String jsonString(String s) {
-        if (s == null) return "null";
-        String escaped = s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
-        return "\"" + escaped + "\"";
+    private void createEmptyPlaceholder(Path thumbPath) {
+        try { if (!Files.exists(thumbPath)) Files.createFile(thumbPath); } catch (Exception ignored) {}
     }
 }

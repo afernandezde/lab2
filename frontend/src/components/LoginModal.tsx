@@ -30,12 +30,16 @@ export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
         setError(apiError);
       } else {
         // show success message briefly before closing
+        // Persist a basic user identity locally (using email as id until backend provides one)
+        try {
+          localStorage.setItem('protube_user_id', email);
+          localStorage.setItem('protube_user', email);
+        } catch {}
         setSuccess(true);
         setTimeout(() => {
-          // pass back the email as username for now (backend may supply real username)
           if (typeof onLoggedIn === 'function') onLoggedIn(email || undefined);
           else onClose();
-        }, 1200);
+        }, 800);
       }
     } catch (err) {
       setError('Network error.');

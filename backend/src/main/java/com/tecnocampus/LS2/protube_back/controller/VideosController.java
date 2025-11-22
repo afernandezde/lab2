@@ -43,6 +43,7 @@ public class VideosController {
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<videoSaveDTO> uploadVideo(
             @RequestPart("file") MultipartFile file,
+            @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail,
             @RequestPart(value = "meta", required = false) videoSaveDTO meta,
             @RequestParam(value = "published", required = false, defaultValue = "false") boolean published
     ) {
@@ -51,7 +52,9 @@ public class VideosController {
             String title = meta != null ? meta.title() : null;
             String description = meta != null ? meta.description() : null;
 
-            Video saved = videoService.uploadAndSave(file, userId, title, description, published);
+            // Use DTO-based method with optional thumbnail
+            videoSaveDTO savedDto = videoService.uploadAndSave(file, thumbnail, meta, published);
+            Video saved = VideoMapper.toVideo(savedDto);
             return ResponseEntity.ok(VideoMapper.toVideoSaveDTO(saved));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();

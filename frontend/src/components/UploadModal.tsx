@@ -9,6 +9,7 @@ type UploadItem = {
   title: string;
   description: string;
   posterUrl?: string;
+  thumbnailFile?: File;
   playlist?: string | null;
   visibility: 'private' | 'public';
   progress: number;
@@ -52,7 +53,14 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
     setPreviewUrl(urls[0] || null);
   };
 
-  // NEW: upload to backend API using multipart/form-data with DTO in "meta"
+  // Select a thumbnail file
+  const handleThumbnail = (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    const f = fileList[0];
+    setItems(prev => prev.length ? [{ ...prev[0], thumbnailFile: f }] : prev);
+  };
+
+  // Upload to backend API using multipart/form-data with DTO in "meta" plus optional "thumbnail"
   const saveAll = async (publish: boolean) => {
     try {
       const userId = localStorage.getItem('protube_user_id') || 'unknown';
@@ -66,6 +74,9 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
         };
         const form = new FormData();
         form.append('file', it.file);
+        if (it.thumbnailFile) {
+          form.append('thumbnail', it.thumbnailFile);
+        }
         form.append('meta', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
         form.append('published', String(publish));
 
@@ -152,6 +163,11 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
             </div>
             <div style={{ marginTop: 8, color: '#6b7280' }}>Nom del fitxer</div>
             <div style={{ fontWeight: 700 }}>{cur.file.name}</div>
+            <div style={{ marginTop: 16 }}>
+              <label style={{ display: 'block', marginBottom: 6 }}>Miniatura (opcional)</label>
+              <input type="file" accept="image/*" onChange={e => handleThumbnail(e.target.files)} />
+              {cur.thumbnailFile ? <div style={{ fontSize: 12, color: '#4b5563', marginTop: 4 }}>Seleccionada: {cur.thumbnailFile.name}</div> : <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>Si no n'afegeixes, se generarà automàticament.</div>}
+            </div>
           </aside>
         </div>
       </div>

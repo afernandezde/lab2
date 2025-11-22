@@ -29,11 +29,15 @@ export default function RegisterModal({ onClose, onRegistered }: RegisterModalPr
         const apiError = await res.text();
         setError(apiError);
       } else {
+        try {
+          localStorage.setItem('protube_user_id', username);
+          localStorage.setItem('protube_user', username);
+        } catch {}
         setSuccess(true);
         setTimeout(() => {
           if (typeof onRegistered === 'function') onRegistered(username);
           else onClose();
-        }, 1200);
+        }, 800);
       }
     } catch (err) {
       setError('Network error.');

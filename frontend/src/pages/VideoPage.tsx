@@ -13,7 +13,7 @@ export default function VideoPage() {
   const video = state?.video;
 
   // If we didn't get full video info, build URLs from name
-  const mediaBase = (window as any).__VITE_MEDIA_BASE__ || '';
+  const mediaBase = (window as any).__VITE_MEDIA_BASE__ || '/media';
   const paramName = name ?? video?.name ?? '';
   const videoUrl = video?.videoUrl ?? (paramName ? `${mediaBase}/${paramName}` : '');
   const posterUrl = video?.posterUrl ?? (paramName ? `${mediaBase}/${paramName.replace(/\.[^/.]+$/, '')}.webp` : '');

@@ -16,7 +16,8 @@ import {
 const Sidebar: React.FC = () => {
   return (
     <nav className="app-sidebar" aria-label="Barra lateral principal">
-      <ul className="sidebar-list">
+      <div className="sidebar-content">
+        <ul className="sidebar-list">
         <li className="sidebar-item">
           <NavLink to="/" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
             <Home size={20} />
@@ -98,6 +99,23 @@ const Sidebar: React.FC = () => {
           </NavLink>
         </li>
       </ul>
+        <div className="sidebar-footer" role="contentinfo">
+          <div className="sidebar-footer__brand">
+            <strong className="sidebar-footer__title">Protube</strong>
+            <span className="sidebar-footer__tag">Best video platform</span>
+          </div>
+
+          <nav className="sidebar-footer__nav" aria-label="Footer">
+            <a href="/" className="sidebar-footer__link">Home</a>
+            <a href="/about" className="sidebar-footer__link">About</a>
+            <a href="/contact" className="sidebar-footer__link">Contact</a>
+          </nav>
+
+          <div className="sidebar-footer__bottom">
+            <small>© {new Date().getFullYear()} Protube</small>
+          </div>
+        </div>
+      </div>
     </nav>
   );
 };

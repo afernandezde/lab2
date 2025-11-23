@@ -17,7 +17,7 @@ import ExploreMovies from './pages/explore/Movies';
 import ExploreLive from './pages/explore/Live';
 import ExploreGaming from './pages/explore/Gaming';
 import Profile from './pages/Profile';
-import Footer from './components/Footer'; // added
+// Footer relocated into Sidebar
 import Sidebar from './components/Sidebar';
 import UploadModal from './components/UploadModal';
 import { useCallback } from 'react';
@@ -213,7 +213,7 @@ function App() {
           </Routes>
         </main>
 
-  <Footer />
+  {/* footer moved into the sidebar */}
   {toast && <div className="toast" role="status">{toast}</div>}
   {uploadOpen && <UploadModal onClose={() => setUploadOpen(false)} />}
         {/* Registration is available from inside the LoginModal via the "Sign up" link. */}

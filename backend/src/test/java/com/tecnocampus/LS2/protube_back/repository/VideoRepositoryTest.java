@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY) // usa BBDD en memoria
+@SuppressWarnings({"null"})
 class VideoRepositoryTest {
 
     @Autowired
@@ -30,6 +31,8 @@ class VideoRepositoryTest {
         v1 = new Video("rid-1", "user-1", "Repo Title A", "Repo Desc A", "fileA.mp4");
         v2 = new Video("rid-2", "user-2", "Repo Title B", "Repo Desc B", "fileB.mp4");
 
+        assertNotNull(v1);
+        assertNotNull(v2);
         videoRepository.save(v1);
         videoRepository.save(v2);
     }

@@ -4,7 +4,6 @@ import com.tecnocampus.LS2.protube_back.services.VideoService;
 import com.tecnocampus.LS2.protube_back.services.UserService;
 import com.tecnocampus.LS2.protube_back.services.ComentariService;
 import com.tecnocampus.LS2.protube_back.domain.Video;
-import com.tecnocampus.LS2.protube_back.controller.dto.ComentariDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,14 +33,11 @@ public class AppStartupRunner implements ApplicationRunner {
     @Autowired
     ComentariService comentariService;
 
-    // Example variables from our implementation. 
-    // Feel free to adapt them to your needs
-    private final Environment env;
+    // Example variables from our implementation.
     private final Path rootPath;
     private final Boolean loadInitialData;
 
     public AppStartupRunner(Environment env) {
-        this.env = env;
         final var rootDir = env.getProperty("pro_tube.store.dir");
         this.rootPath = Paths.get(rootDir);
         loadInitialData = env.getProperty("pro_tube.load_initial_data", Boolean.class);
@@ -88,6 +84,7 @@ public class AppStartupRunner implements ApplicationRunner {
                     if (rootPath != null) {
                         Path jsonPath = rootPath.resolve(baseName + ".json");
                         if (Files.exists(jsonPath)) {
+                            ObjectMapper mapper = new ObjectMapper();
                             var map = mapper.readValue(jsonPath.toFile(), new TypeReference<java.util.Map<String, Object>>(){});
                             Object t = map.get("title");
                             if (t instanceof String s && !s.isBlank()) {

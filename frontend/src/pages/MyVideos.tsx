@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { getEnv } from '../utils/Env';
 import { Link } from 'react-router-dom';
 
 type ChannelVideo = {
@@ -17,6 +18,8 @@ const MyVideos: React.FC = () => {
       return localStorage.getItem('protube_user_id') || localStorage.getItem('protube_user');
     } catch { return null; }
   })();
+
+  const MEDIA_BASE = getEnv().MEDIA_BASE_URL || '/media';
 
   useEffect(() => {
     if (!userId) return;
@@ -70,9 +73,10 @@ const MyVideos: React.FC = () => {
         </div>
       ) : userId ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
-          {videos.map(v => {
-            const posterUrl = `/media/${v.fileName.replace(/\.[^.]+$/, '')}.webp`;
-            const videoState = { name: v.fileName, title: v.title, posterUrl, videoUrl: `/media/${v.fileName}` };
+            {videos.map(v => {
+            const base = v.fileName.replace(/\.[^.]+$/, '');
+            const posterUrl = `${MEDIA_BASE}/${base}.webp`;
+            const videoState = { name: v.fileName, title: v.title, posterUrl, videoUrl: `${MEDIA_BASE}/${v.fileName}` };
             return (
               <div key={v.fileName} style={{ padding: 12, borderRadius: 8, background: '#fff' }}>
                 <Link to={`/video/${encodeURIComponent(v.fileName)}`} state={{ video: videoState }} style={{ textDecoration: 'none', color: 'inherit' }}>

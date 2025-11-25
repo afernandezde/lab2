@@ -33,8 +33,9 @@ class UserControllerTest {
 
         ResponseEntity<List<UserDTO>> res = controller.listUsers();
         assertEquals(200, res.getStatusCode().value());
-        assertNotNull(res.getBody());
-        assertEquals(2, res.getBody().size());
+        var body = res.getBody();
+        assertNotNull(body);
+        assertEquals(2, body.size());
     }
 
     @Test
@@ -42,7 +43,9 @@ class UserControllerTest {
         doNothing().when(userService).register("alex", "alex@example.com", "pw");
         ResponseEntity<String> res = controller.registerUser("alex", "alex@example.com", "pw");
         assertEquals(200, res.getStatusCode().value());
-        assertTrue(res.getBody().toLowerCase().contains("registered"));
+        var body = res.getBody();
+        assertNotNull(body);
+        assertTrue(body.toLowerCase().contains("registered"));
     }
 
     @Test
@@ -50,7 +53,9 @@ class UserControllerTest {
         doThrow(new RuntimeException("Error: ya existe un usuario con ese correo.")).when(userService).register("alex", "alex@example.com", "pw");
         ResponseEntity<String> res = controller.registerUser("alex", "alex@example.com", "pw");
         assertEquals(409, res.getStatusCode().value());
-        assertTrue(res.getBody().toLowerCase().contains("ya existe") || res.getBody().toLowerCase().contains("exists"));
+        var body = res.getBody();
+        assertNotNull(body);
+        assertTrue(body.toLowerCase().contains("ya existe") || body.toLowerCase().contains("exists"));
     }
 
     @Test
@@ -58,7 +63,9 @@ class UserControllerTest {
         doNothing().when(userService).login("u@example.com", "pw");
         ResponseEntity<String> res = controller.loginUser("u@example.com", "pw");
         assertEquals(200, res.getStatusCode().value());
-        assertTrue(res.getBody().toLowerCase().contains("logged in") || res.getBody().toLowerCase().contains("logged"));
+        var body = res.getBody();
+        assertNotNull(body);
+        assertTrue(body.toLowerCase().contains("logged in") || body.toLowerCase().contains("logged"));
     }
 
     @Test
@@ -66,7 +73,9 @@ class UserControllerTest {
         doThrow(new RuntimeException("This email is not registered.")).when(userService).login("no@example.com", "pw");
         ResponseEntity<String> res = controller.loginUser("no@example.com", "pw");
         assertEquals(404, res.getStatusCode().value());
-        assertTrue(res.getBody().toLowerCase().contains("not registered") || res.getBody().toLowerCase().contains("no existe") || res.getBody().toLowerCase().contains("email"));
+        var body = res.getBody();
+        assertNotNull(body);
+        assertTrue(body.toLowerCase().contains("not registered") || body.toLowerCase().contains("no existe") || body.toLowerCase().contains("email"));
     }
 
     @Test
@@ -74,7 +83,9 @@ class UserControllerTest {
         doThrow(new RuntimeException("Incorrect password.")).when(userService).login("u@example.com", "bad");
         ResponseEntity<String> res = controller.loginUser("u@example.com", "bad");
         assertEquals(401, res.getStatusCode().value());
-        assertTrue(res.getBody().toLowerCase().contains("incorrect") || res.getBody().toLowerCase().contains("contraseña"));
+        var body = res.getBody();
+        assertNotNull(body);
+        assertTrue(body.toLowerCase().contains("incorrect") || body.toLowerCase().contains("contraseña"));
     }
 
     @Test
@@ -82,6 +93,8 @@ class UserControllerTest {
         doThrow(new RuntimeException("Something went wrong")).when(userService).login("u@example.com", "pw");
         ResponseEntity<String> res = controller.loginUser("u@example.com", "pw");
         assertEquals(500, res.getStatusCode().value());
-        assertTrue(res.getBody().toLowerCase().contains("something") || res.getBody().toLowerCase().contains("internal"));
+        var body = res.getBody();
+        assertNotNull(body);
+        assertTrue(body.toLowerCase().contains("something") || body.toLowerCase().contains("internal"));
     }
 }

@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -38,18 +39,22 @@ public class VideoService {
         return videoRepository.findAll()
             .stream()
             .map(Video::getFileName)
+            .filter(Objects::nonNull)
             .toList();
     }
 
     public Video getVideoById(String id) {
+        if (id == null) return null;
         return videoRepository.findById(id).orElse(null);
     }
 
     public Video saveVideo(Video video) {
+        if (video == null) throw new IllegalArgumentException("video is null");
         return videoRepository.save(video);
     }
 
     public boolean deleteVideo(String id) {
+        if (id == null) return false;
         var existing = videoRepository.findById(id);
         if (existing.isEmpty()) {
             return false;

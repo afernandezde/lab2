@@ -127,10 +127,11 @@ class VideosControllerTest {
     void getAllVideos_returnsAllAndOk() {
         ResponseEntity<List<Video>> res = videosController.getAllVideos();
         assertEquals(HttpStatus.OK, res.getStatusCode());
-        assertNotNull(res.getBody());
-        assertEquals(2, res.getBody().size());
-        assertEquals("First Video", res.getBody().get(0).getTitle());
-        assertEquals("Second Video", res.getBody().get(1).getTitle());
+        var body = res.getBody();
+        assertNotNull(body);
+        assertEquals(2, body.size());
+        assertEquals("First Video", body.get(0).getTitle());
+        assertEquals("Second Video", body.get(1).getTitle());
     }
 
     @Test
@@ -156,8 +157,9 @@ class VideosControllerTest {
     void saveVideo_returnsOkBodyAndPersists() {
         ResponseEntity<String> res = videosController.saveVideo(sampleSaveDto);
         assertEquals(HttpStatus.OK, res.getStatusCode());
-        assertNotNull(res.getBody());
-        assertTrue(res.getBody().length() > 0);
+        var body = res.getBody();
+        assertNotNull(body);
+        assertTrue(body.length() > 0);
 
         // ensure fakeDb contains a video with the saved title
         boolean found = fakeDb.stream().anyMatch(v -> "Saved Video".equals(v.getTitle()));

@@ -48,10 +48,6 @@ public class VideosController {
             @RequestParam(value = "published", required = false, defaultValue = "false") boolean published
     ) {
         try {
-            String userId = meta != null ? meta.userId() : null;
-            String title = meta != null ? meta.title() : null;
-            String description = meta != null ? meta.description() : null;
-
             // Use DTO-based method with optional thumbnail
             videoSaveDTO savedDto = videoService.uploadAndSave(file, thumbnail, meta, published);
             Video saved = VideoMapper.toVideo(savedDto);

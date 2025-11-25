@@ -29,7 +29,9 @@ class ComentariControllerTest {
     void getComentarios_returnsList() {
         when(comentariService.listAll()).thenReturn(List.of(new ComentariDTO("1","u1","v1","t","d")));
         var resp = comentariController.getComentarios();
-        assertEquals(1, resp.getBody().size());
+        var body = resp.getBody();
+        assertNotNull(body);
+        assertEquals(1, body.size());
     }
 
     @Test
@@ -39,21 +41,27 @@ class ComentariControllerTest {
         when(comentariService.create(dto, dto.userId())).thenReturn(saved);
         ResponseEntity<String> resp = comentariController.saveComentario(dto);
     assertEquals(200, resp.getStatusCode().value());
-        assertTrue(resp.getBody().contains("c1"));
+        var body = resp.getBody();
+        assertNotNull(body);
+        assertTrue(body.contains("c1"));
     }
 
     @Test
     void getCommentsByVideo_returnsList() {
         when(comentariService.findByVideoId("v1")).thenReturn(List.of(new ComentariDTO("1","u1","v1","t","d")));
         var resp = comentariController.getCommentsByVideo("v1");
-        assertEquals(1, resp.getBody().size());
+        var body = resp.getBody();
+        assertNotNull(body);
+        assertEquals(1, body.size());
     }
 
     @Test
     void getCommentsMap_returnsMap() {
         when(comentariService.getCommentsGroupedByVideo()).thenReturn(Map.of("v1", List.of(new ComentariDTO("1","u1","v1","t","d"))));
         var resp = comentariController.getCommentsMap();
-        assertEquals(1, resp.getBody().size());
+        var body = resp.getBody();
+        assertNotNull(body);
+        assertEquals(1, body.size());
     }
 
     @Test
@@ -61,7 +69,9 @@ class ComentariControllerTest {
         when(comentariService.findById("1")).thenReturn(Optional.of(new ComentariDTO("1","u1","v1","t","d")));
         var resp = comentariController.getComentarioById("1");
     assertEquals(200, resp.getStatusCode().value());
-        assertEquals("1", resp.getBody().id());
+        var body = resp.getBody();
+        assertNotNull(body);
+        assertEquals("1", body.id());
     }
 
     @Test
@@ -89,6 +99,8 @@ class ComentariControllerTest {
     void getCommentsByUser_returnsList() {
         when(comentariService.findByUserId("u1")).thenReturn(List.of(new ComentariDTO("1","u1","v1","t","d")));
         var resp = comentariController.getCommentsByUser("u1");
-        assertEquals(1, resp.getBody().size());
+        var body = resp.getBody();
+        assertNotNull(body);
+        assertEquals(1, body.size());
     }
 }

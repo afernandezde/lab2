@@ -16,14 +16,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT) // evita UnnecessaryStubbing por stubs globales
+@SuppressWarnings({"null"})
 class VideoServiceTest {
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
@@ -52,12 +51,12 @@ class VideoServiceTest {
         // Stubs that operate over the fakeDb so all tests see consistent behavior
         when(videoRepository.findAll()).thenAnswer(inv -> new ArrayList<>(fakeDb));
 
-        when(videoRepository.findById(any(String.class))).thenAnswer(inv -> {
+        when(videoRepository.findById(org.mockito.ArgumentMatchers.argThat(s -> s != null))).thenAnswer(inv -> {
             String id = inv.getArgument(0);
             return fakeDb.stream().filter(v -> Objects.equals(getId(v), id)).findFirst();
         });
 
-        when(videoRepository.save(any(Video.class))).thenAnswer(inv -> {
+        when(videoRepository.save(org.mockito.ArgumentMatchers.argThat(v -> v != null))).thenAnswer(inv -> {
             Video incoming = inv.getArgument(0);
             // If no id, generate one (simulate DB behavior loosely)
             if (getId(incoming) == null || getId(incoming).isEmpty()) {
@@ -69,12 +68,7 @@ class VideoServiceTest {
             return incoming;
         });
 
-        // delete is void; simulate removal
-        doAnswer(inv -> {
-            String id = inv.getArgument(0);
-            fakeDb.removeIf(v -> Objects.equals(getId(v), id));
-            return null;
-        }).when(videoRepository).deleteById(any(String.class));
+        // delete: rely on service logic + verification; repository mock will do nothing
     }
 
     // Helper accessors to avoid relying on Lombok/setters visibility

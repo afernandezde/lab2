@@ -9,6 +9,7 @@ type UploadItem = {
   title: string;
   description: string;
   posterUrl?: string;
+  thumbnailFile?: File;
   playlist?: string | null;
   visibility: 'private' | 'public';
   progress: number;
@@ -52,26 +53,47 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
     setPreviewUrl(urls[0] || null);
   };
 
-  const saveAll = (publish: boolean) => {
+  // Select a thumbnail file
+  const handleThumbnail = (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    const f = fileList[0];
+    setItems(prev => prev.length ? [{ ...prev[0], thumbnailFile: f }] : prev);
+  };
+
+  // Upload to backend API using multipart/form-data with DTO in "meta" plus optional "thumbnail"
+  const saveAll = async (publish: boolean) => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY) || '[]';
-      let arr = JSON.parse(raw) as any[];
-      // copy playlists once and update
-      const rawp = localStorage.getItem('protube_playlists') || '{}';
-      const playlistsObj = JSON.parse(rawp) as Record<string, string[]>;
-      items.forEach(it => {
-        const record = { name: it.file.name, title: it.title, posterUrl: it.posterUrl || '', description: it.description, createdAt: Date.now(), published: publish };
-        arr = [record, ...arr.filter(a => a.name !== record.name)];
-          // no playlist support here (handled elsewhere)
-        try { window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'channel_upload' } })); } catch (e) {}
-      });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-      try { localStorage.setItem('protube_playlists', JSON.stringify(playlistsObj)); } catch (e) {}
-      try { window.dispatchEvent(new CustomEvent('protube:toast', { detail: { message: publish ? 'Vídeos publicats' : 'Vídeos desats com a privat' } })); } catch (e) {}
+      const userId = localStorage.getItem('protube_user_id') || 'unknown';
+
+      const results = await Promise.all(items.map(async (it) => {
+        const meta = {
+          userId,
+          title: it.title || it.file.name,
+          description: it.description || '',
+          fileName: it.file.name
+        };
+        const form = new FormData();
+        form.append('file', it.file);
+        if (it.thumbnailFile) {
+          form.append('thumbnail', it.thumbnailFile);
+        }
+        form.append('meta', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+        form.append('published', String(publish));
+
+        const res = await fetch('/api/videos/upload', { method: 'POST', body: form });
+        return res.ok;
+      }));
+
+      const allOk = results.every(Boolean);
+      try {
+        window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'channel_upload' } }));
+        window.dispatchEvent(new CustomEvent('protube:toast', { detail: { message: allOk ? (publish ? 'Vídeos publicats' : 'Vídeos desats') : 'Alguns errors en pujar' } }));
+      } catch (e) {}
     } catch (e) {
-      try { window.alert('Error desant els vídeos'); } catch (e) {}
+      try { window.alert('Error uploading the videos'); } catch {}
+    } finally {
+      onClose();
     }
-    onClose();
   };
 
   if (items.length === 0) {
@@ -141,6 +163,11 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
             </div>
             <div style={{ marginTop: 8, color: '#6b7280' }}>Nom del fitxer</div>
             <div style={{ fontWeight: 700 }}>{cur.file.name}</div>
+            <div style={{ marginTop: 16 }}>
+              <label style={{ display: 'block', marginBottom: 6 }}>Miniatura (opcional)</label>
+              <input type="file" accept="image/*" onChange={e => handleThumbnail(e.target.files)} />
+              {cur.thumbnailFile ? <div style={{ fontSize: 12, color: '#4b5563', marginTop: 4 }}>Seleccionada: {cur.thumbnailFile.name}</div> : <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>Si no n'afegeixes, se generarà automàticament.</div>}
+            </div>
           </aside>
         </div>
       </div>

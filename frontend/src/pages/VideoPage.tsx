@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { Heart, Clock as ClockIcon, PlusSquare } from 'lucide-react';
 import { VideoItem } from '../useAllVideos';
@@ -13,7 +13,7 @@ export default function VideoPage() {
   const video = state?.video;
 
   // If we didn't get full video info, build URLs from name
-  const mediaBase = (window as any).__VITE_MEDIA_BASE__ || '';
+  const mediaBase = (window as any).__VITE_MEDIA_BASE__ || '/media';
   const paramName = name ?? video?.name ?? '';
   const videoUrl = video?.videoUrl ?? (paramName ? `${mediaBase}/${paramName}` : '');
   const posterUrl = video?.posterUrl ?? (paramName ? `${mediaBase}/${paramName.replace(/\.[^/.]+$/, '')}.webp` : '');
@@ -240,16 +240,30 @@ export default function VideoPage() {
   };
 
   // Save to history when the page mounts (viewedAt = now). Keep newest first and dedupe by name
+  const postedRef = useRef(false);
   useEffect(() => {
+    if (!videoKey || postedRef.current) return;
+    postedRef.current = true; // ensure single execution even in React StrictMode double-mount
+    const viewedAt = Date.now();
+    // Local fallback history (dedupe by name)
     try {
       const raw = localStorage.getItem('protube_history') || '[]';
       const arr = JSON.parse(raw) as Array<{ name: string; title?: string; posterUrl?: string; videoUrl?: string; viewedAt: number }>;
-      const next = [{ name: videoKey, title, posterUrl, videoUrl, viewedAt: Date.now() }, ...(arr.filter(a => a.name !== videoKey))];
-      // keep at most 200 entries to avoid infinite growth
-      const trimmed = next.slice(0, 200);
-      localStorage.setItem('protube_history', JSON.stringify(trimmed));
-    } catch (e) {}
-  }, [videoKey, title, posterUrl, videoUrl]);
+      const next = [{ name: videoKey, title, posterUrl, videoUrl, viewedAt }, ...(arr.filter(a => a.name !== videoKey))];
+      localStorage.setItem('protube_history', JSON.stringify(next.slice(0, 200)));
+    } catch {}
+    // Backend registration
+    try {
+      const uid = localStorage.getItem('protube_user_id') || localStorage.getItem('protube_user');
+      if (uid) {
+        fetch('/api/history/view', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: uid, videoFileName: videoKey })
+        }).catch(() => {});
+      }
+    } catch {}
+  }, [videoKey]);
 
   // No longer saving comments in localStorage; using backend API instead
 

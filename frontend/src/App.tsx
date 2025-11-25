@@ -3,7 +3,6 @@ import { useAllVideos } from './useAllVideos';
 import { useState, useEffect, useRef } from 'react';
 import { CircleUser } from 'lucide-react';
 import LoginModal from './components/LoginModal';
-import RegisterModal from './components/RegisterModal';
 import VideoGrid from './components/VideoGrid';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import VideoPage from './pages/VideoPage';
@@ -18,14 +17,13 @@ import ExploreMovies from './pages/explore/Movies';
 import ExploreLive from './pages/explore/Live';
 import ExploreGaming from './pages/explore/Gaming';
 import Profile from './pages/Profile';
-import Footer from './components/Footer'; // added
+// Footer relocated into Sidebar
 import Sidebar from './components/Sidebar';
 import UploadModal from './components/UploadModal';
 import { useCallback } from 'react';
 
 function App() {
   const [showLogin, setShowLogin] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
       return Boolean(localStorage.getItem('protube_user'));
@@ -96,7 +94,10 @@ function App() {
     setUsername(null);
     try {
       localStorage.removeItem('protube_user');
+      localStorage.removeItem('protube_user_id');
       localStorage.removeItem('protube_username');
+      // notify other components in the same tab to refresh auth-dependent state
+      try { window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'auth', loggedIn: false } })); } catch (e) {}
     } catch (e) {}
   };
 
@@ -152,20 +153,6 @@ function App() {
                 </div>
             {!isAuthenticated ? (
               <>
-                <button
-                  onClick={() => setShowRegister(true)}
-                  style={{
-                    background: 'transparent',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    color: 'white',
-                    padding: '8px 12px',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    marginRight: 12,
-                  }}
-                >
-                  Register
-                </button>
                 <button
                   onClick={() => setShowLogin(!showLogin)}
                   style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
@@ -226,27 +213,10 @@ function App() {
           </Routes>
         </main>
 
-  <Footer />
+  {/* footer moved into the sidebar */}
   {toast && <div className="toast" role="status">{toast}</div>}
   {uploadOpen && <UploadModal onClose={() => setUploadOpen(false)} />}
-        {showRegister && (
-          <RegisterModal
-            onClose={() => setShowRegister(false)}
-            onRegistered={(name?: string) => {
-              setShowRegister(false);
-              setIsAuthenticated(true);
-              if (name) {
-                setUsername(name);
-                try {
-                  localStorage.setItem('protube_username', name);
-                } catch (e) {}
-              }
-              try {
-                localStorage.setItem('protube_user', '1');
-              } catch (e) {}
-            }}
-          />
-        )}
+        {/* Registration is available from inside the LoginModal via the "Sign up" link. */}
       </div>
     </BrowserRouter>
   );

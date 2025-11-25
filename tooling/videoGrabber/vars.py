@@ -12,6 +12,6 @@ This has been added to the gitignore, so each team member can have an specific c
 
 
 # Here you have your own path
-YT_DLP_BIN="/home/rogergraupera/yt-dlp_linux"
+YT_DLP_BIN="/home/rrecolonsir/yt-dlp_linux"
 FFMPEG_BIN="ffmpeg"
 FFPROBE_BIN="ffprobe"

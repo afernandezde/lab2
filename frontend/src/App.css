@@ -1,5 +1,12 @@
 .App {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
   text-align: center;
+}
+
+.App main {
+  flex: 1;
 }
 
 .App-logo {
@@ -332,9 +339,17 @@
   background: #ffffff;
   border-right: 1px solid #e6e6e6;
   padding: 12px 8px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   z-index: 900;
 }
+.sidebar-content {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding-right: 6px; /* room for scrollbar */
+}
+
 .sidebar-list {
   list-style: none;
   padding: 0;
@@ -386,6 +401,20 @@
   text-transform: uppercase;
   font-weight: 700;
 }
+
+/* Sidebar footer (compact) */
+.sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid #eef2f7;
+  background: transparent;
+}
+.sidebar-footer__brand { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+.sidebar-footer__title { color: #111827; font-size: 16px; font-weight: 800; }
+.sidebar-footer__tag { color: #6b7280; font-size: 12px; }
+.sidebar-footer__nav { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.sidebar-footer__link { color: #6b7280; text-decoration: none; font-size: 13px; }
+.sidebar-footer__link:hover { color: #111827; text-decoration: underline; }
+.sidebar-footer__bottom { color: #94a3b8; font-size: 12px; text-align: left; }
 
 /* Video action buttons */
 .video-actions {

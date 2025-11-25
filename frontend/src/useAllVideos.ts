@@ -4,7 +4,8 @@ import { getEnv } from './utils/Env';
 
 type LoadingState = 'loading' | 'success' | 'error' | 'idle';
 
-const ALL_VIDEOS_URL = `${getEnv().API_BASE_URL}/videos`;
+// Use full video objects endpoint so we can display real titles, not UUID-based filenames
+const ALL_VIDEOS_URL = `${getEnv().API_BASE_URL}/videos/all`;
 const MEDIA_BASE_URL = getEnv().MEDIA_BASE_URL;
 export type VideoItem = {
   name: string;
@@ -27,7 +28,7 @@ export function useAllVideos() {
     const getVideos = async () => {
       try {
         setLoading('loading');
-        const response = await axios.get<string[]>(ALL_VIDEOS_URL);
+        const response = await axios.get<any[]>(ALL_VIDEOS_URL);
         if (response.status === 200) {
           const mapped = await Promise.all(
             response.data.map(async (u) => {

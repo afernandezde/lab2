@@ -74,8 +74,7 @@ public class AppStartupRunner implements ApplicationRunner {
             // Create 9 videos distributed among users
             java.util.List<Video> createdVideos = new java.util.ArrayList<>();
             int userIndex = 0;
-            final ObjectMapper mapper = new ObjectMapper();
-            for (int i = 1; i <= 9; i++) {
+            for (int i = 1; i <= 12; i++) {
                 // find user id from repository via listAllUsers()
                 var users = userService.listAllUsers();
                 String ownerId = users.get(userIndex).id();

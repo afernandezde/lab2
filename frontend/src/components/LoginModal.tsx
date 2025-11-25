@@ -30,12 +30,30 @@ export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
         setError(apiError);
       } else {
         // show success message briefly before closing
+        // Persist a basic user identity locally (using email as id until backend provides one)
+        try {
+          localStorage.setItem('protube_user_id', email);
+          localStorage.setItem('protube_user', email);
+        } catch {}
         setSuccess(true);
-        setTimeout(() => {
-          // pass back the email as username for now (backend may supply real username)
-          if (typeof onLoggedIn === 'function') onLoggedIn(email || undefined);
+        // try to fetch the real username from the backend and pass it back
+        setTimeout(async () => {
+          let nameToUse: string | undefined = undefined;
+          try {
+            const unameRes = await fetch(`http://localhost:8080/api/users/username?email=${encodeURIComponent(email)}`);
+            if (unameRes.ok) {
+              const body = await unameRes.text();
+              // backend returns plain username string
+              if (body && body.trim().length > 0) nameToUse = body.trim();
+            }
+          } catch (e) {
+            // ignore and fallback
+          }
+          // fallback to email if username lookup failed
+          if (!nameToUse) nameToUse = email || undefined;
+          if (typeof onLoggedIn === 'function') onLoggedIn(nameToUse);
           else onClose();
-        }, 1200);
+        }, 800);
       }
     } catch (err) {
       setError('Network error.');
@@ -55,6 +73,10 @@ export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
           setShowRegister(false);
           if (typeof onLoggedIn === 'function') onLoggedIn(registeredUsername);
           else onClose();
+        }}
+        onBackToLogin={() => {
+          // simply hide register and keep login visible
+          setShowRegister(false);
         }}
       />
     );

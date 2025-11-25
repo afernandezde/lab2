@@ -14,4 +14,5 @@ public interface VideoRepository extends JpaRepository<Video, String> {
     <S extends Video> S save(S video);
     List<Video> findAll();
     Optional<Video> findById(String id);
+    Optional<Video> findByFileName(String fileName);
 }

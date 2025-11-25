@@ -47,17 +47,18 @@ def compute_cut_params(v: str, full_duration: int) -> dict[str, int]:
     }
 
 def grab_video(v:str, id: int):
+    print("1")
     YT_URL = "https://www.youtube.com/watch"
     CONSTANT_DLP_PARAMS = ("--quiet --no-overwrites --write-comments --extractor-args youtube:max_comments={} "
                            "--remux-video mp4 --write-info-json --write-thumbnail --convert-thumbnails webp --embed-thumbnail"
                            .format(random.randint(1, 14)))
 
     dlp_command = f"{YT_DLP_BIN} -f bv+ba -S filesize~100M -o {id}_tmp.%(ext)s {CONSTANT_DLP_PARAMS} {YT_URL}?v={v}"
-
+    print("2" + dlp_command)
     subprocess.run(dlp_command.split(" "), cwd=STORE_DIR)
-
+    print("5")
     os.renames(f"{STORE_DIR}/{id}_tmp.webp", f"{STORE_DIR}/{id}.webp")
-
+    print("3" + str(os.path.exists(f"{STORE_DIR}/{id}_tmp.mp4)")))
     video_info_filename = f"{STORE_DIR}/{id}_tmp.info.json"
 
     with open(video_info_filename, "r", encoding="utf-8") as f:
@@ -78,6 +79,7 @@ def grab_video(v:str, id: int):
              "like_count": comment["like_count"]
             } for comment in j["comments"] ] if "comments" in j else []
 
+    print("4")
     os.remove(video_info_filename)
 
     cut_params = compute_cut_params(v, full_duration)
@@ -87,6 +89,7 @@ def grab_video(v:str, id: int):
     subprocess.run(ffmpeg_cut_command.split(" "),
                    cwd=STORE_DIR)
 
+    print("6")
     os.remove(f"{STORE_DIR}/{id}_tmp.mp4")
 
     # get format of downloaded video
@@ -97,7 +100,8 @@ def grab_video(v:str, id: int):
                             cwd=STORE_DIR)
     json_video_info = json.loads(result.stdout)
     video_format_info = json_video_info["streams"][0]
-
+    print("7")
+    
     info = {
         "id": id,
         "width": video_format_info["width"],
@@ -117,7 +121,7 @@ def grab_video(v:str, id: int):
             "comments": comments
         }
     }
-
+    print("8")
     with open(f"{STORE_DIR}/{id}.json", 'w', encoding='utf-8') as o:
         json.dump(info, o, ensure_ascii=False, indent=4)
 
@@ -143,6 +147,7 @@ def grab_videos():
             sys.stdout.flush()
             grab_video(video, id)
         except FileNotFoundError as e:
+            print("------" + str(e))
             print(f"Error with video: {video} -- Skipped")
 
     print(f"Picking your videos... done")

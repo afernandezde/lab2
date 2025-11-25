@@ -15,6 +15,10 @@ import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.Files;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 @Component
 public class AppStartupRunner implements ApplicationRunner {
@@ -74,29 +78,51 @@ public class AppStartupRunner implements ApplicationRunner {
                 // find user id from repository via listAllUsers()
                 var users = userService.listAllUsers();
                 String ownerId = users.get(userIndex).id();
-                Video v = new Video(ownerId,"" + i, "Description for video " + i, i + ".mp4");
+                // Default values in case metadata is missing
+                String baseName = String.valueOf(i);
+                String fileName = baseName + ".mp4";
+                String title = baseName; // will be replaced by metadata title if available
+                String description = "Description for video " + baseName;
+
+                try {
+                    if (rootPath != null) {
+                        Path jsonPath = rootPath.resolve(baseName + ".json");
+                        if (Files.exists(jsonPath)) {
+                            var map = mapper.readValue(jsonPath.toFile(), new TypeReference<java.util.Map<String, Object>>(){});
+                            Object t = map.get("title");
+                            if (t instanceof String s && !s.isBlank()) {
+                                title = s;
+                            }
+                            Object metaObj = map.get("meta");
+                            if (metaObj instanceof java.util.Map<?,?> mm) {
+                                Object desc = mm.get("description");
+                                if (desc instanceof String ds && !ds.isBlank()) {
+                                    description = ds;
+                                }
+                            } else {
+                                Object desc = map.get("description");
+                                if (desc instanceof String ds && !ds.isBlank()) {
+                                    description = ds;
+                                }
+                            }
+                        } else {
+                            LOG.warn("Metadata JSON not found for video {} at {}", baseName, jsonPath);
+                        }
+                    }
+                } catch (Exception metaEx) {
+                    LOG.warn("Failed to read metadata for video {}: {}", baseName, metaEx.getMessage());
+                }
+
+                Video v = new Video(ownerId, title, description, fileName);
                 Video saved = videoService.saveVideo(v);
                 createdVideos.add(saved);
                 LOG.info("Created video {} (id={}) by user {}", saved.getTitle(), saved.getVideoId(), ownerId);
                 userIndex = (userIndex + 1) % users.size();
             }
-
-            // For each video create 3 comments using rotating users
-            var usersList = userService.listAllUsers();
-            for (Video vid : createdVideos) {
-                for (int c = 1; c <= 3; c++) {
-                    var commenter = usersList.get((c - 1) % usersList.size());
-                    ComentariDTO commentDto = new ComentariDTO(null, commenter.id(), vid.getVideoId(), "Comment " + c + " on " + vid.getTitle(), "This is comment number " + c + " for " + vid.getTitle());
-                    try {
-                        comentariService.create(commentDto, commenter.id());
-                        LOG.info("Created comment by {} on video {}", commenter.id(), vid.getVideoId());
-                    } catch (Exception ex) {
-                        LOG.warn("Failed to create comment for video {}: {}", vid.getVideoId(), ex.getMessage());
-                    }
-                }
-            }
-        } catch (Exception e) {
-            LOG.error("Error loading initial data: {}", e.getMessage(), e);
+        }
+        catch (Exception e) {
+            LOG.error("Error during initial data load: {}", e.getMessage());
         }
     }
 }
+

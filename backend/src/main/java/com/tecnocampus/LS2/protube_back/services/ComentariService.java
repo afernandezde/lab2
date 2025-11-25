@@ -25,24 +25,35 @@ public class ComentariService {
 	 * Create a comment. currentUserId is the id of the authenticated user making the request.
 	 */
 	public ComentariDTO create(ComentariDTO dto, String currentUserId) {
-		if (dto == null) throw new IllegalArgumentException("dto is null");
+		if (dto == null) {
+			System.out.println("Error: el DTO del comentario es nulo.");
+			throw new IllegalArgumentException("dto is null");
+		}
 		if (currentUserId == null || currentUserId.isBlank()) {
+			System.out.println("Error: falta el id del usuario autenticado (currentUserId).");
 			throw new IllegalArgumentException("currentUserId (authenticated user) is required");
 		}
 		if (dto.userId() == null || dto.userId().isBlank()) {
+			System.out.println("Error: falta userId; el usuario debe estar autenticado para comentar.");
 			throw new IllegalArgumentException("userId is required to create a comment (user must be logged in)");
 		}
 		if (!currentUserId.equals(dto.userId())) {
+			System.out.println("Error: el usuario autenticado no coincide con el userId del comentario.");
 			throw new IllegalArgumentException("authenticated user does not match comment userId");
 		}
 		if (dto.videoId() == null || dto.videoId().isBlank()) {
+			System.out.println("Error: falta videoId para crear el comentario.");
 			throw new IllegalArgumentException("videoId is required to create a comment");
 		}
 		if (videoService.getVideoById(dto.videoId()) == null) {
+			System.out.println("Error: el vídeo no existe: " + dto.videoId());
 			throw new IllegalArgumentException("video does not exist: " + dto.videoId());
 		}
 		Comentari entity = ComentariMapper.toEntity(dto);
 		Comentari saved = repo.save(entity);
+		System.out.println("Comentario creado con éxito. ID: " + saved.getId() +
+				" | videoId: " + saved.getVideoId() +
+				" | userId: " + saved.getUserId());
 		return ComentariMapper.toDto(saved);
 	}
 

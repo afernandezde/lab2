@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 
 @Entity
 public class Video {
@@ -11,6 +12,7 @@ public class Video {
     private String videoId = String.valueOf(UUID.randomUUID());
     private String userId;
     private String title;
+    @Lob
     private String description;
     private String fileName;
 

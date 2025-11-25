@@ -20,9 +20,10 @@ export default function VideoPage() {
   const title = video?.title ?? video?.name ?? paramName ?? '';
   const description = video?.description ?? '';
 
-  // Comments: simple client-side storage per video name
+  // Comments
   const videoKey = paramName || 'unknown';
-  const [comments, setComments] = useState<Array<{ id: number; username?: string; text: string; createdAt: number }>>([]);
+  const [comments, setComments] = useState<Array<{ id: string | number; username?: string; text: string; createdAt: number }>>([]);
+  const [backendVideoId, setBackendVideoId] = useState<string | undefined>(video?.videoId);
   const [commentText, setCommentText] = useState('');
   const [isAuthenticated] = useState<boolean>(() => {
     try {
@@ -32,14 +33,66 @@ export default function VideoPage() {
     }
   });
 
+  // If we have a videoId from navigation state, use it immediately
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(`comments_${videoKey}`) || '[]';
-      setComments(JSON.parse(raw));
-    } catch (e) {
-      setComments([]);
+    if (video?.videoId) {
+      setBackendVideoId(video.videoId);
     }
-  }, [videoKey]);
+  }, [video?.videoId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const API = '/api';
+
+    const resolveVideoId = async (): Promise<string | undefined> => {
+      try {
+        const res = await fetch(`${API}/videos/all`);
+        if (res.ok) {
+          const all: any[] = await res.json();
+          const key = decodeURIComponent(videoKey);
+          const found = all.find(v => {
+            const fn: string = v?.fileName || '';
+            const base = fn.replace(/\.[^/.]+$/, '');
+            return fn === key || base === key;
+          });
+          return found?.videoId as string | undefined;
+        }
+      } catch {}
+      return undefined;
+    };
+
+    const loadComments = async (vid?: string) => {
+      if (!vid) { setComments([]); return; }
+      try {
+        const res = await fetch(`${API}/comentaris/video/${encodeURIComponent(vid)}`);
+        if (cancelled) return;
+        if (res.ok) {
+          const data: Array<{ id: string; userId: string; videoId: string; titulo?: string; descripcion?: string }>|null = await res.json();
+          const mapped = (data || []).map(d => ({
+            id: d.id,
+            username: d.userId,
+            text: d.descripcion || d.titulo || '',
+            createdAt: Date.now(),
+          }));
+          setComments(mapped);
+        } else {
+          setComments([]);
+        }
+      } catch {
+        if (!cancelled) setComments([]);
+      }
+    };
+
+    (async () => {
+      // Short-circuit if we already know the id from navigation
+      const vid = video?.videoId || (await resolveVideoId());
+      if (cancelled) return;
+      setBackendVideoId(vid);
+      await loadComments(vid);
+    })();
+
+    return () => { cancelled = true; };
+  }, [videoKey, video?.videoId]);
 
   // Likes / watch later / playlists state
   const [liked, setLiked] = useState<boolean>(false);
@@ -212,11 +265,7 @@ export default function VideoPage() {
     } catch {}
   }, [videoKey]);
 
-  const saveComments = (next: typeof comments) => {
-    try {
-      localStorage.setItem(`comments_${videoKey}`, JSON.stringify(next));
-    } catch (e) {}
-  };
+  // No longer saving comments in localStorage; using backend API instead
 
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,10 +278,62 @@ export default function VideoPage() {
         return 'Usuario';
       }
     })();
-    const next = [{ id: Date.now(), username: currentUser, text, createdAt: Date.now() }, ...comments];
+    const next = [{ id: Date.now().toString(), username: currentUser, text, createdAt: Date.now() }, ...comments];
     setComments(next);
-    saveComments(next);
     setCommentText('');
+
+    // Persist comment to backend comments API (no localhost, relative API base)
+    (async () => {
+      try {
+        const API = '/api'; // use relative API base, no localhost
+        // Prefer previously resolved videoId; avoid sending filename as id
+        const resolvedVideoId = backendVideoId;
+
+        const payload = {
+          userId: currentUser,
+          videoId: resolvedVideoId, // if undefined, backend will reject with clear error
+          titulo: title || videoKey,
+          descripcion: text,
+        };
+
+        const resp = await fetch(`${API}/comentaris/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (resp.ok) {
+          showToast('Comentari guardat');
+          try { window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'comentari', videoKey } })); } catch {}
+          // Refresh comments from backend to reflect persisted state
+          try {
+            const vid = resolvedVideoId || backendVideoId;
+            if (vid) {
+              const res2 = await fetch(`${API}/comentaris/video/${encodeURIComponent(vid)}`);
+              if (res2.ok) {
+                const data: Array<{ id: string; userId: string; videoId: string; titulo?: string; descripcion?: string }>|null = await res2.json();
+                const mapped = (data || []).map(d => ({ id: d.id, username: d.userId, text: d.descripcion || d.titulo || '', createdAt: Date.now() }));
+                setComments(mapped);
+              }
+            }
+          } catch {}
+        } else {
+          let msg = "No s'ha pogut desar el comentari al servidor";
+          try {
+            const headerMsg = resp.headers.get('X-Error');
+            if (headerMsg) msg = headerMsg; else {
+              const txt = await resp.text();
+              if (txt) msg = txt;
+            }
+          } catch {}
+          showToast(msg);
+          console.warn('Failed to save comment to backend', resp.status, msg);
+        }
+      } catch (err) {
+        console.warn('Backend comment save failed', err);
+        showToast("No s'ha pogut desar el comentari al servidor");
+      }
+    })();
   };
 
   return (

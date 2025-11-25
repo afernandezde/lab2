@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 interface RegisterModalProps {
   onClose: () => void;
   // when registration succeeds, pass the username back to the parent
-  onRegistered?: (username?: string) => void;
+  onRegistered?: (username?: string, userId?: string) => void;
   // when user wants to go back to the login modal without closing everything
   onBackToLogin?: () => void;
 }
@@ -37,9 +37,19 @@ export default function RegisterModal({ onClose, onRegistered, onBackToLogin }: 
         } catch {}
         setSuccess(true);
         setTimeout(() => {
-          if (typeof onRegistered === 'function') onRegistered(username);
-          else onClose();
-        }, 800);
+          (async () => {
+            let idToUse: string | undefined = undefined;
+            try {
+              const idRes = await fetch(`/api/users/id?email=${encodeURIComponent(email)}`);
+              if (idRes.ok) {
+                const idBody = await idRes.text();
+                if (idBody && idBody.trim().length > 0) idToUse = idBody.trim();
+              }
+            } catch (e) {}
+            if (typeof onRegistered === 'function') onRegistered(username, idToUse);
+            else onClose();
+          })();
+        }, 1200);
       }
     } catch (err) {
       setError('Network error.');

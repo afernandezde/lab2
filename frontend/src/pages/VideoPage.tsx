@@ -97,13 +97,22 @@ export default function VideoPage() {
   // Likes / watch later / playlists state
   const [liked, setLiked] = useState<boolean>(false);
   const [watchLater, setWatchLater] = useState<boolean>(false);
+  const [likedLoading, setLikedLoading] = useState<boolean>(false);
 
   // sync liked/watchLater when videoKey changes (handles navigation without full reload)
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('protube_liked') || '[]';
-      const arr = JSON.parse(raw) as string[];
-      setLiked(arr.includes(videoKey));
+      const userId = localStorage.getItem('protube_user');
+      // If there's no logged user, fall back to localStorage for liked state.
+      if (!userId) {
+        const raw = localStorage.getItem('protube_liked') || '[]';
+        const arr = JSON.parse(raw) as string[];
+        setLiked(arr.includes(videoKey));
+      } else {
+        // When a user is logged in, don't keep previous local 'liked' state
+        // until the backend confirms the like status.
+        setLiked(false);
+      }
     } catch (e) {
       setLiked(false);
     }
@@ -117,23 +126,174 @@ export default function VideoPage() {
     }
   }, [videoKey]);
 
-  const toggleLiked = () => {
-    try {
-      const raw = localStorage.getItem('protube_liked') || '[]';
-      const arr = (JSON.parse(raw) as string[]) || [];
-      const exists = arr.includes(videoKey);
-      const next = exists ? arr.filter(x => x !== videoKey) : [videoKey, ...arr];
-      localStorage.setItem('protube_liked', JSON.stringify(next));
-  setLiked(!exists);
-  // feedback
-  if (!exists) showToast("Afegit a M'agrada"); else showToast("Eliminat de M'agrada");
-      // notify other components in same tab
+  // When the videoKey or user changes, ask the backend if the current user already liked this video
+  useEffect(() => {
+    let mounted = true;
+
+    // Accept optional event detail so we can avoid re-fetching immediately
+    // after a local like/unlike action that already determined the state.
+    const checkLikeStatus = async (eventDetail?: { type?: string; videoKey?: string; removed?: boolean }) => {
       try {
-        window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'liked', videoKey } }));
+        // If the update event tells us the like was added/removed, trust it
+        if (eventDetail?.type === 'liked' && eventDetail.videoKey === videoKey && typeof eventDetail.removed === 'boolean') {
+          if (mounted) {
+            setLiked(!eventDetail.removed ? true : false);
+            setLikedLoading(false);
+          }
+          return;
+        }
+
+        const userId = localStorage.getItem('protube_user');
+        console.debug('checkLikeStatus userId', { userId, videoKey });
+        if (!userId) {
+          if (mounted) {
+            setLiked(false);
+            setLikedLoading(false);
+          }
+          return;
+        }
+        if (!videoKey) {
+          if (mounted) setLiked(false);
+          return;
+        }
+        if (mounted) setLikedLoading(true);
+        const url = `/api/likes?userId=${encodeURIComponent(userId)}&videoId=${encodeURIComponent(videoKey)}`;
+        console.debug('Checking like status GET', url);
+        const res = await fetch(url, { method: 'GET' });
+        let textBody = '';
+        try {
+          textBody = await res.text().catch(() => '');
+          console.debug('GET response', { status: res.status, body: textBody });
+          // try parse as json if possible
+          try {
+            const json = textBody ? JSON.parse(textBody) : null;
+            console.debug('GET parsed json', json);
+          } catch (e) {
+            // ignore parse error
+          }
+        } catch (e) {
+          console.debug('Error reading GET body', e);
+        }
+        if (!mounted) return;
+        if (res.ok) {
+          setLiked(true);
+        } else {
+          setLiked(false);
+        }
+      } catch (e) {
+        console.error('Error checking like status', e);
+        if (mounted) setLiked(false);
+      } finally {
+        if (mounted) setLikedLoading(false);
+      }
+    };
+
+    // Run on mount
+    checkLikeStatus();
+
+    // Re-check when localStorage changes or our app dispatches protube:update
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'protube_user' || e.key === 'protube_liked' || e.key === null) {
+        checkLikeStatus();
+      }
+    };
+    const onUpdate = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      checkLikeStatus(detail);
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('protube:update', onUpdate as EventListener);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('protube:update', onUpdate as EventListener);
+    };
+  }, [videoKey]);
+
+  const toggleLiked = async () => {
+    try {
+      console.debug('toggleLiked called', { liked, likedLoading, videoKey });
+      const userId = localStorage.getItem('protube_user');
+      console.debug('toggleLiked userId', { userId, videoKey, liked });
+      if (!userId) {
+        showToast('Debes registrarte o iniciar sesión para usar Me Gusta');
+        return;
+      }
+      const base = `http://localhost:8080/api/likes?userId=${userId}&videoId=${videoKey}`;
+
+      // mark as loading for the toggle operation
+      setLikedLoading(true);
+
+      if (liked) {
+        // send DELETE to unlike
+        const res = await fetch(base, { method: 'DELETE' });
+        let removed = true;
+        try {
+          const text = await res.text().catch(() => '');
+          console.debug('DELETE response', { status: res.status, body: text });
+          // If backend returns a boolean JSON, parse it
+          try {
+            const json = text ? JSON.parse(text) : null;
+            console.debug('DELETE parsed json', json);
+            if (typeof json === 'boolean') removed = json;
+            // If backend returns an object (LikeDTO) consider removed = true when status is 200
+          } catch (e) {
+            // not JSON, ignore
+            console.debug('DELETE body not JSON', e);
+          }
+        } catch (e) {
+          console.debug('Error reading DELETE body', e);
+        }
+        if (!res.ok) {
+          console.error('Unlike failed', res.status);
+          showToast('No se pudo eliminar Me Gusta');
+          return;
+        }
+        // keep localStorage in sync for non-auth or other parts that read it
+        try {
+          const raw = localStorage.getItem('protube_liked') || '[]';
+          const arr = (JSON.parse(raw) as string[]) || [];
+          const next = arr.filter(x => x !== videoKey);
+          localStorage.setItem('protube_liked', JSON.stringify(next));
+        } catch (e) {}
+        setLiked(!removed ? true : false);
+        if (removed) showToast("Eliminat de M'agrada"); else showToast('Me Gusta no existía');
+        try { window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'liked', videoKey, removed } })); } catch (e) {}
+        console.debug('toggleLiked - unliked via backend', { videoKey, userId, removed });
+        return;
+      }
+
+      // send POST to like
+      const res = await fetch(base, { method: 'POST' });
+      try {
+        const text = await res.text().catch(() => '');
+        console.debug('POST response', { status: res.status, body: text });
+      } catch (e) {
+        console.debug('Error reading POST body', e);
+      }
+      if (!res.ok) {
+        console.error('Like POST failed', res.status);
+        showToast('No se pudo añadir a Me Gusta');
+        return;
+      }
+      try {
+        const raw = localStorage.getItem('protube_liked') || '[]';
+        const arr = (JSON.parse(raw) as string[]) || [];
+        if (!arr.includes(videoKey)) {
+          arr.unshift(videoKey);
+          localStorage.setItem('protube_liked', JSON.stringify(arr));
+        }
       } catch (e) {}
-      console.debug('toggleLiked', { videoKey, exists, next });
+      setLiked(true);
+      showToast("Afegit a M'agrada");
+      try { window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'liked', videoKey, removed: false } })); } catch (e) {}
+      console.debug('toggleLiked - liked via backend', { videoKey, userId });
     } catch (e) {
       console.error('toggleLiked error', e);
+      showToast('Error al procesar Me Gusta');
+    } finally {
+      setLikedLoading(false);
     }
   };
 
@@ -361,6 +521,8 @@ export default function VideoPage() {
             onClick={toggleLiked}
             aria-pressed={liked}
             title={liked ? 'Unlike' : 'Like'}
+            disabled={likedLoading}
+            aria-busy={likedLoading}
           >
             <Heart size={18} />
             <span className="action-text">M'agrada</span>

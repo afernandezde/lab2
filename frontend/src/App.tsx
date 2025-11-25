@@ -109,7 +109,7 @@ function App() {
         {showLogin && (
           <LoginModal
             onClose={() => setShowLogin(false)}
-            onLoggedIn={(name?: string) => {
+            onLoggedIn={(name?: string, userId?: string) => {
               setShowLogin(false);
               setIsAuthenticated(true);
               if (name) {
@@ -119,7 +119,8 @@ function App() {
                 } catch (e) {}
               }
               try {
-                localStorage.setItem('protube_user', '1');
+                if (userId) localStorage.setItem('protube_user', userId);
+                else if (name) localStorage.setItem('protube_user', name);
               } catch (e) {}
             }}
           />

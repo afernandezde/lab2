@@ -76,4 +76,36 @@ public class UserController {
             }
         }
     }
+
+    // Endpoint to get the user id by email
+    @GetMapping("/id")
+    public ResponseEntity<String> getIdByEmail(@RequestParam String email) {
+        try {
+            return ResponseEntity.ok(userService.getIdByEmail(email));
+        } catch (RuntimeException e) {
+            String msg = e.getMessage();
+            if (msg != null && (msg.toLowerCase().contains("email") && msg.toLowerCase().contains("register"))
+                    || (msg != null && msg.toLowerCase().contains("not registered"))) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(msg);
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(msg != null ? msg : "Internal server error");
+            }
+        }
+    }
+
+    // Endpoint to get the user id by username
+    @GetMapping("/idByUsername")
+    public ResponseEntity<String> getIdByUsername(@RequestParam String username) {
+        try {
+            return ResponseEntity.ok(userService.getIdByUsername(username));
+        } catch (RuntimeException e) {
+            String msg = e.getMessage();
+            if (msg != null && (msg.toLowerCase().contains("username") && msg.toLowerCase().contains("register"))
+                    || (msg != null && msg.toLowerCase().contains("not registered"))) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(msg);
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(msg != null ? msg : "Internal server error");
+            }
+        }
+    }
 }

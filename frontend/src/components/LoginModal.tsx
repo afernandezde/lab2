@@ -6,7 +6,7 @@ import RegisterModal from './RegisterModal';
 interface LoginModalProps {
   onClose: () => void;
   // optional callback receives username when login succeeds
-  onLoggedIn?: (username?: string) => void;
+  onLoggedIn?: (username?: string, userId?: string) => void;
 }
 
 export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
@@ -36,24 +36,28 @@ export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
           localStorage.setItem('protube_user', email);
         } catch {}
         setSuccess(true);
-        // try to fetch the real username from the backend and pass it back
+          // try to fetch the real username and user id from the backend and pass them back
         setTimeout(async () => {
-          let nameToUse: string | undefined = undefined;
-          try {
-            const unameRes = await fetch(`http://localhost:8080/api/users/username?email=${encodeURIComponent(email)}`);
-            if (unameRes.ok) {
-              const body = await unameRes.text();
-              // backend returns plain username string
-              if (body && body.trim().length > 0) nameToUse = body.trim();
-            }
-          } catch (e) {
-            // ignore and fallback
-          }
-          // fallback to email if username lookup failed
-          if (!nameToUse) nameToUse = email || undefined;
-          if (typeof onLoggedIn === 'function') onLoggedIn(nameToUse);
-          else onClose();
-        }, 800);
+            let nameToUse: string | undefined = undefined;
+            let idToUse: string | undefined = undefined;
+            try {
+              const unameRes = await fetch(`/api/users/username?email=${encodeURIComponent(email)}`);
+              if (unameRes.ok) {
+                const body = await unameRes.text();
+                if (body && body.trim().length > 0) nameToUse = body.trim();
+              }
+            } catch (e) {}
+            try {
+              const idRes = await fetch(`/api/users/id?email=${encodeURIComponent(email)}`);
+              if (idRes.ok) {
+                const idBody = await idRes.text();
+                if (idBody && idBody.trim().length > 0) idToUse = idBody.trim();
+              }
+            } catch (e) {}
+            if (!nameToUse) nameToUse = email || undefined;
+            if (typeof onLoggedIn === 'function') onLoggedIn(nameToUse, idToUse);
+            else onClose();
+        }, 1200);
       }
     } catch (err) {
       setError('Network error.');
@@ -69,9 +73,9 @@ export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
           setShowRegister(false);
           onClose();
         }}
-        onRegistered={(registeredUsername?: string) => {
+        onRegistered={(registeredUsername?: string, registeredId?: string) => {
           setShowRegister(false);
-          if (typeof onLoggedIn === 'function') onLoggedIn(registeredUsername);
+          if (typeof onLoggedIn === 'function') onLoggedIn(registeredUsername, registeredId);
           else onClose();
         }}
         onBackToLogin={() => {

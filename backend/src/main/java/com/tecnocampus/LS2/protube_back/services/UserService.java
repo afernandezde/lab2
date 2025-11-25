@@ -73,4 +73,22 @@ public class UserService {
         }
         return userOpt.get().getUsername();
     }
+
+    public String getIdByEmail(String email) {
+        Optional<User> userOpt = repository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            System.out.println("Error: el correo no existe.");
+            throw new RuntimeException("This email is not registered.");
+        }
+        return userOpt.get().getId();
+    }
+
+    public String getIdByUsername(String username) {
+        Optional<User> userOpt = repository.findByUsername(username);
+        if (userOpt.isEmpty()) {
+            System.out.println("Error: el username no existe.");
+            throw new RuntimeException("This username is not registered.");
+        }
+        return userOpt.get().getId();
+    }
 }

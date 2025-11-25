@@ -16,15 +16,17 @@ public class MvcConfig implements WebMvcConfigurer {
     @Override
         public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
         registry
-           .addResourceHandler("/media/**")
-           .addResourceLocations(
-                   String.format("file:%s", env.getProperty("pro_tube.store.dir")));
+                .addResourceHandler("/media/**")
+                .addResourceLocations(
+                        String.format("file:%s", env.getProperty("pro_tube.store.dir")));
 
         registry.addResourceHandler("/**")
-           .addResourceLocations("classpath:/static/", "classpath:/public/",
+                .addResourceLocations(
+                        "classpath:/static/",
+                        "classpath:/public/",
                         "classpath:/resources/",
                         "classpath:/META-INF/resources/")
-           .setCachePeriod(3600);
+                .setCachePeriod(3600);
     }
 
     @Override
@@ -36,5 +38,11 @@ public class MvcConfig implements WebMvcConfigurer {
         // Allow the frontend to fetch metadata JSON and other media resources
         registry.addMapping("/media/**")
                 .allowedOriginPatterns("*");
+        registry.addMapping("/**")
+                .allowedOrigins("http://localhost:5173")  // tu frontend
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600);
     }
 }

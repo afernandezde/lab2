@@ -145,7 +145,6 @@ function App() {
                   {createOpen && (
                     <div className="create-menu" role="menu" aria-label="Crear">
                       <button className="create-menu-item" role="menuitem" onClick={() => { setCreateOpen(false); try { window.dispatchEvent(new CustomEvent('protube:open-upload')); } catch (e) {} }}>Penja un vídeo</button>
-                      <button className="create-menu-item" role="menuitem" onClick={() => { setCreateOpen(false); try { window.alert('Funcionalitat de streaming no implementada'); } catch (e) {} }}>Emet en directe</button>
                       <button className="create-menu-item" role="menuitem" onClick={() => { setCreateOpen(false); window.location.hash = '#post'; window.location.pathname = '/profile'; }}>Crea una publicació</button>
                     </div>
                   )}

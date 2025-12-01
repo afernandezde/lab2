@@ -90,4 +90,25 @@ class PlaylistControllerTest {
 
         verify(playlistService).deletePlaylist("p1");
     }
+
+    @Test
+    void createPlaylist_duplicate() throws Exception {
+        when(playlistService.createPlaylist("Existing", "u1"))
+            .thenThrow(new IllegalArgumentException("Duplicate"));
+
+        mockMvc.perform(post("/api/playlists/user/u1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("Existing"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getUserPlaylists_empty() throws Exception {
+        when(playlistService.getPlaylists("u1")).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/playlists/user/u1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+    }
 }

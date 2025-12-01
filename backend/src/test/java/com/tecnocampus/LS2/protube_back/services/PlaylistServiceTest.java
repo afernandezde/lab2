@@ -106,4 +106,27 @@ class PlaylistServiceTest {
         playlistService.deletePlaylist("p1");
         verify(playlistRepository).deleteById("p1");
     }
+
+    @Test
+    void getPlaylists_success() {
+        when(playlistRepository.findByUserId("u1")).thenReturn(List.of(new Playlist("P1", "u1")));
+        
+        List<Playlist> result = playlistService.getPlaylists("u1");
+        assertEquals(1, result.size());
+        assertEquals("P1", result.get(0).getName());
+    }
+
+    @Test
+    void addVideoToPlaylist_notFound() {
+        when(playlistRepository.findById("p1")).thenReturn(Optional.empty());
+        
+        assertThrows(RuntimeException.class, () -> playlistService.addVideoToPlaylist("p1", "v1"));
+    }
+
+    @Test
+    void removeVideoFromPlaylist_notFound() {
+        when(playlistRepository.findById("p1")).thenReturn(Optional.empty());
+        
+        assertThrows(RuntimeException.class, () -> playlistService.removeVideoFromPlaylist("p1", "v1"));
+    }
 }

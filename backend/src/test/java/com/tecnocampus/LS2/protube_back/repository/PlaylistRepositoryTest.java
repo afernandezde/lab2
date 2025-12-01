@@ -48,4 +48,21 @@ class PlaylistRepositoryTest {
         Optional<Playlist> notFound = playlistRepository.findByUserIdAndName("user1", "Other");
         assertFalse(notFound.isPresent());
     }
+
+    @Test
+    void deletePlaylist() {
+        Playlist p = new Playlist("To Delete", "user1");
+        playlistRepository.save(p);
+        
+        playlistRepository.deleteById(p.getId());
+        
+        Optional<Playlist> found = playlistRepository.findById(p.getId());
+        assertFalse(found.isPresent());
+    }
+
+    @Test
+    void findNonExistent() {
+        Optional<Playlist> found = playlistRepository.findById("non-existent");
+        assertFalse(found.isPresent());
+    }
 }

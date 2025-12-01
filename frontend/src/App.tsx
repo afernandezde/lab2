@@ -116,11 +116,10 @@ function App() {
                 setUsername(name);
                 try {
                   localStorage.setItem('protube_username', name);
+                  localStorage.setItem('protube_user_id', name); // Use username as ID for consistency
+                  localStorage.setItem('protube_user', name);
                 } catch (e) {}
               }
-              try {
-                localStorage.setItem('protube_user', '1');
-              } catch (e) {}
             }}
           />
         )}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { VideoItem } from '../useAllVideos';
+import { VideoItem, useAllVideos } from '../useAllVideos';
 
 type HistoryEntry = {
   name: string;
@@ -11,6 +11,7 @@ type HistoryEntry = {
 };
 
 export default function History() {
+  const { value: allVideos } = useAllVideos();
   const [history, setHistory] = useState<HistoryEntry[]>(() => {
     try { return JSON.parse(localStorage.getItem('protube_history') || '[]'); } catch { return []; }
   });
@@ -73,11 +74,15 @@ export default function History() {
       )}
       {userId && backendHistory && backendHistory.length > 0 && (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 12 }}>
-          {backendHistory.map(h => (
+          {backendHistory.map(h => {
+            const baseName = h.name.replace(/\.[^.]+$/, '');
+            const videoInfo = allVideos.find(v => v.name === baseName || v.name === h.name);
+            const displayTitle = videoInfo?.title || h.title || h.name;
+            return (
             <li key={h.name} style={{ listStyle: 'none', margin: 0 }}>
               <Link
                 to={`/video/${encodeURIComponent(h.name)}`}
-                state={{ video: (h as unknown) as VideoItem }}
+                state={{ video: videoInfo || (h as unknown) as VideoItem }}
                 style={{
                   display: 'flex',
                   gap: 12,
@@ -90,26 +95,30 @@ export default function History() {
                 }}
               >
                 {h.posterUrl ? (
-                  <img src={h.posterUrl} alt={h.title ?? h.name} style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 8 }} />
+                  <img src={h.posterUrl} alt={displayTitle} style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 8 }} />
                 ) : (
                   <div style={{ width: 120, height: 68, background: '#000', borderRadius: 8 }} />
                 )}
                 <div style={{ flex: 1, textAlign: 'left' }}>
-                  <div style={{ fontWeight: 700 }}>{h.title ?? h.name}</div>
+                  <div style={{ fontWeight: 700 }}>{displayTitle}</div>
                   <div style={{ fontSize: 12, color: '#6b7280', marginTop: 6 }}>{new Date(h.viewedAt).toLocaleString()}</div>
                 </div>
               </Link>
             </li>
-          ))}
+          );})}
         </ul>
       )}
       {!userId && history.length > 0 && (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 12 }}>
-          {history.map(h => (
+          {history.map(h => {
+            const baseName = h.name.replace(/\.[^.]+$/, '');
+            const videoInfo = allVideos.find(v => v.name === baseName || v.name === h.name);
+            const displayTitle = videoInfo?.title || h.title || h.name;
+            return (
             <li key={h.name} style={{ listStyle: 'none', margin: 0 }}>
               <Link
                 to={`/video/${encodeURIComponent(h.name)}`}
-                state={{ video: (h as unknown) as VideoItem }}
+                state={{ video: videoInfo || (h as unknown) as VideoItem }}
                 style={{
                   display: 'flex',
                   gap: 12,
@@ -122,17 +131,17 @@ export default function History() {
                 }}
               >
                 {h.posterUrl ? (
-                  <img src={h.posterUrl} alt={h.title ?? h.name} style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 8 }} />
+                  <img src={h.posterUrl} alt={displayTitle} style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 8 }} />
                 ) : (
                   <div style={{ width: 120, height: 68, background: '#000', borderRadius: 8 }} />
                 )}
                 <div style={{ flex: 1, textAlign: 'left' }}>
-                  <div style={{ fontWeight: 700 }}>{h.title ?? h.name}</div>
+                  <div style={{ fontWeight: 700 }}>{displayTitle}</div>
                   <div style={{ fontSize: 12, color: '#6b7280', marginTop: 6 }}>{new Date(h.viewedAt).toLocaleString()}</div>
                 </div>
               </Link>
             </li>
-          ))}
+          );})}
         </ul>
       )}
     </div>

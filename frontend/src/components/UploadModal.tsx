@@ -63,7 +63,7 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
   // Upload to backend API using multipart/form-data with DTO in "meta" plus optional "thumbnail"
   const saveAll = async (publish: boolean) => {
     try {
-      const userId = localStorage.getItem('protube_user_id') || 'unknown';
+      const userId = localStorage.getItem('protube_username') || localStorage.getItem('protube_user_id') || 'unknown';
 
       const results = await Promise.all(items.map(async (it) => {
         const meta = {

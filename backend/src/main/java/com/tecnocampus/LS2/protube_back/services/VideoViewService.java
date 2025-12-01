@@ -33,7 +33,7 @@ public class VideoViewService {
             existing.setViewedAt(Instant.now().toEpochMilli());
         }
         var saved = videoViewRepository.save(existing);
-        Video video = videoRepository.findByFileName(videoFileName).orElse(null);
+        Video video = resolveVideo(videoFileName);
         return VideoViewMapper.toDTO(saved, video);
     }
 
@@ -44,9 +44,18 @@ public class VideoViewService {
         return videoViewRepository.findByUserIdOrderByViewedAtDesc(userId)
                 .stream()
                 .map(v -> {
-                    Video video = videoRepository.findByFileName(v.getVideoFileName()).orElse(null);
+                    Video video = resolveVideo(v.getVideoFileName());
                     return VideoViewMapper.toDTO(v, video);
                 })
                 .collect(Collectors.toList());
+    }
+
+    private Video resolveVideo(String fileName) {
+        return videoRepository.findByFileName(fileName)
+                .or(() -> {
+                    var list = videoRepository.findByFileNameStartingWith(fileName + ".");
+                    return list.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(list.get(0));
+                })
+                .orElse(null);
     }
 }

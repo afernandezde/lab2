@@ -6,11 +6,6 @@ import {
   List as ListIcon,
   Video,
   ThumbsUp,
-  Download,
-  Music,
-  Film,
-  Cast,
-  Gamepad,
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -57,45 +52,6 @@ const Sidebar: React.FC = () => {
           <NavLink to="/liked" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
             <ThumbsUp size={20} />
             <span className="sidebar-text">Vídeos que m'agraden</span>
-          </NavLink>
-        </li>
-
-        <li className="sidebar-item">
-          <NavLink to="/downloads" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
-            <Download size={20} />
-            <span className="sidebar-text">Baixades</span>
-          </NavLink>
-        </li>
-
-        <li className="sidebar-sep" aria-hidden="true"></li>
-
-        <li className="sidebar-section-title">Explora</li>
-
-        <li className="sidebar-item">
-          <NavLink to="/explore/music" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
-            <Music size={20} />
-            <span className="sidebar-text">Música</span>
-          </NavLink>
-        </li>
-
-        <li className="sidebar-item">
-          <NavLink to="/explore/movies" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
-            <Film size={20} />
-            <span className="sidebar-text">Pel·lícules</span>
-          </NavLink>
-        </li>
-
-        <li className="sidebar-item">
-          <NavLink to="/explore/live" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
-            <Cast size={20} />
-            <span className="sidebar-text">En directe</span>
-          </NavLink>
-        </li>
-
-        <li className="sidebar-item">
-          <NavLink to="/explore/gaming" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
-            <Gamepad size={20} />
-            <span className="sidebar-text">Videojocs</span>
           </NavLink>
         </li>
       </ul>

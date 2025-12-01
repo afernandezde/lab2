@@ -96,10 +96,17 @@ export default function VideoPage() {
 
   // Likes / watch later / playlists state
   const [liked, setLiked] = useState<boolean>(false);
-  const [watchLater, setWatchLater] = useState<boolean>(false);
+  const [watchLaterPlaylist, setWatchLaterPlaylist] = useState<{ id: string; videoIds: string[] } | null>(null);
+  const [playlists, setPlaylists] = useState<Array<{ id: string; name: string; videoIds: string[] }>>([]);
+  const [showPlaylistPopover, setShowPlaylistPopover] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
 
-  // sync liked/watchLater when videoKey changes (handles navigation without full reload)
+  const userId = localStorage.getItem('protube_user_id') || localStorage.getItem('protube_user');
+  const targetVideoId = backendVideoId || videoKey;
+
+  // sync liked (local) and fetch playlists/watchLater (backend)
   useEffect(() => {
+    // Liked (Local)
     try {
       const raw = localStorage.getItem('protube_liked') || '[]';
       const arr = JSON.parse(raw) as string[];
@@ -108,14 +115,19 @@ export default function VideoPage() {
       setLiked(false);
     }
 
-    try {
-      const raw = localStorage.getItem('protube_watch_later') || '[]';
-      const arr = JSON.parse(raw) as string[];
-      setWatchLater(arr.includes(videoKey));
-    } catch (e) {
-      setWatchLater(false);
+    // Backend Playlists & Watch Later
+    if (userId) {
+      fetch(`/api/playlists/user/${userId}/watch-later`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => setWatchLaterPlaylist(data))
+        .catch(() => {});
+
+      fetch(`/api/playlists/user/${userId}`)
+        .then(r => r.ok ? r.json() : [])
+        .then(data => setPlaylists(data.filter((p: any) => p.name !== 'Watch Later')))
+        .catch(() => {});
     }
-  }, [videoKey]);
+  }, [videoKey, userId, backendVideoId]);
 
   const toggleLiked = () => {
     try {
@@ -124,111 +136,104 @@ export default function VideoPage() {
       const exists = arr.includes(videoKey);
       const next = exists ? arr.filter(x => x !== videoKey) : [videoKey, ...arr];
       localStorage.setItem('protube_liked', JSON.stringify(next));
-  setLiked(!exists);
-  // feedback
-  if (!exists) showToast("Afegit a M'agrada"); else showToast("Eliminat de M'agrada");
-      // notify other components in same tab
-      try {
-        window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'liked', videoKey } }));
-      } catch (e) {}
-      console.debug('toggleLiked', { videoKey, exists, next });
-    } catch (e) {
-      console.error('toggleLiked error', e);
-    }
+      setLiked(!exists);
+      if (!exists) showToast("Afegit a M'agrada"); else showToast("Eliminat de M'agrada");
+    } catch (e) {}
   };
 
-  const toggleWatchLater = () => {
+  const toggleWatchLater = async () => {
+    if (!userId) {
+      showToast('Inicia sessió per utilitzar aquesta funció');
+      return;
+    }
+    
+    let playlist = watchLaterPlaylist;
+    if (!playlist) {
+      try {
+        const res = await fetch(`/api/playlists/user/${userId}/watch-later`);
+        if (res.ok) {
+          playlist = await res.json();
+          setWatchLaterPlaylist(playlist);
+        } else {
+          showToast('Error obtenint la llista Watch Later');
+          return;
+        }
+      } catch (e) {
+        console.error(e);
+        return;
+      }
+    }
+
+    if (!playlist) return;
+
+    const exists = playlist.videoIds.includes(targetVideoId);
     try {
-      const raw = localStorage.getItem('protube_watch_later') || '[]';
-      const arr = (JSON.parse(raw) as string[]) || [];
-      const exists = arr.includes(videoKey);
-      const next = exists ? arr.filter(x => x !== videoKey) : [videoKey, ...arr];
-      localStorage.setItem('protube_watch_later', JSON.stringify(next));
-  setWatchLater(!exists);
-  if (!exists) showToast('Afegit a Veure més tard'); else showToast('Eliminat de Veure més tard');
-      try {
-        window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'watch_later', videoKey } }));
-      } catch (e) {}
-      console.debug('toggleWatchLater', { videoKey, exists, next });
+      if (exists) {
+        await fetch(`/api/playlists/${playlist.id}/videos/${encodeURIComponent(targetVideoId)}`, { method: 'DELETE' });
+        showToast('Eliminat de Veure més tard');
+      } else {
+        await fetch(`/api/playlists/${playlist.id}/videos/${encodeURIComponent(targetVideoId)}`, { method: 'POST' });
+        showToast('Afegit a Veure més tard');
+      }
+      // Refresh
+      const res = await fetch(`/api/playlists/user/${userId}/watch-later`);
+      if (res.ok) setWatchLaterPlaylist(await res.json());
     } catch (e) {
-      console.error('toggleWatchLater error', e);
+      console.error(e);
     }
   };
 
-  const handleAddToPlaylist = async () => {
-    // Open the popover to let the user pick or create a playlist (non-blocking)
+  const handleAddToPlaylist = () => {
+    if (!userId) {
+      showToast('Inicia sessió per crear playlists');
+      return;
+    }
     setShowPlaylistPopover(true);
   };
 
-  // Popover UI state for adding to playlists (preferred UX)
-  const [playlistsMap, setPlaylistsMap] = useState<Record<string, string[]>>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('protube_playlists') || '{}');
-    } catch (e) {
-      return {};
+  const addToExistingPlaylist = async (playlist: { id: string; name: string; videoIds: string[] }) => {
+    if (!userId) return;
+    if (playlist.videoIds.includes(targetVideoId)) {
+      alert('Aquest vídeo ja està a la playlist');
+      return;
     }
-  });
-  const [showPlaylistPopover, setShowPlaylistPopover] = useState(false);
-  const [newPlaylistName, setNewPlaylistName] = useState('');
-
-  // keep playlistsMap in sync with storage and other tabs
-  useEffect(() => {
-    const onStorage = () => {
-      try {
-        setPlaylistsMap(JSON.parse(localStorage.getItem('protube_playlists') || '{}'));
-      } catch (e) {
-        setPlaylistsMap({});
-      }
-    };
-    window.addEventListener('storage', onStorage);
-    const onUpdate = (e: Event) => onStorage();
-    window.addEventListener('protube:update', onUpdate as EventListener);
-    return () => {
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener('protube:update', onUpdate as EventListener);
-    };
-  }, []);
-
-  const addToExistingPlaylist = (name: string) => {
     try {
-      const raw = localStorage.getItem('protube_playlists') || '{}';
-      const obj = JSON.parse(raw) as Record<string, string[]>;
-      const list = obj[name] || [];
-      if (!list.includes(videoKey)) {
-        obj[name] = [videoKey, ...list];
-        localStorage.setItem('protube_playlists', JSON.stringify(obj));
-        setPlaylistsMap(obj);
-        try { window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'playlists', name } })); } catch (e) {}
-        showToast(`Afegit a la playlist: ${name}`);
-      } else {
-        // show a blocking alert as requested
-        try { window.alert('Aquest vídeo ja està a la playlist'); } catch (e) { /* ignore */ }
-        showToast('Aquest vídeo ja està a la playlist');
-      }
+      await fetch(`/api/playlists/${playlist.id}/videos/${encodeURIComponent(targetVideoId)}`, { method: 'POST' });
+      showToast(`Afegit a la playlist: ${playlist.name}`);
       setShowPlaylistPopover(false);
-    } catch (e) {}
+      // Refresh
+      const res = await fetch(`/api/playlists/user/${userId}`);
+      if (res.ok) setPlaylists((await res.json()).filter((p: any) => p.name !== 'Watch Later'));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const createAndAddPlaylist = (name: string) => {
-    if (!name) return;
+  const createAndAddPlaylist = async (name: string) => {
+    if (!name || !userId) return;
     try {
-      const raw = localStorage.getItem('protube_playlists') || '{}';
-      const obj = JSON.parse(raw) as Record<string, string[]>;
-      // If playlist name already exists, inform the user and don't silently overwrite
-      if (Object.prototype.hasOwnProperty.call(obj, name)) {
-        // show blocking alert to notify user
-        try { window.alert('Ja existeix una playlist amb aquest nom. Tria un altre nom o selecciona l\'existent.'); } catch (e) {}
-        showToast('Ja existeix una playlist amb aquest nom. Tria un altre nom o selecciona l\'existent.');
-      } else {
-        obj[name] = [videoKey];
-        localStorage.setItem('protube_playlists', JSON.stringify(obj));
-        setPlaylistsMap(obj);
-        try { window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'playlists', name } })); } catch (e) {}
+      // Create
+      const createRes = await fetch(`/api/playlists/user/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: name
+      });
+      if (createRes.ok) {
+        const newPlaylist = await createRes.json();
+        // Add video
+        await fetch(`/api/playlists/${newPlaylist.id}/videos/${encodeURIComponent(targetVideoId)}`, { method: 'POST' });
         showToast(`Creada i afegida a la playlist: ${name}`);
+        setShowPlaylistPopover(false);
+        setNewPlaylistName('');
+        // Refresh
+        const res = await fetch(`/api/playlists/user/${userId}`);
+        if (res.ok) setPlaylists((await res.json()).filter((p: any) => p.name !== 'Watch Later'));
+      } else {
+        alert('Error al crear la playlist');
       }
-      setNewPlaylistName('');
-      setShowPlaylistPopover(false);
-    } catch (e) {}
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   // Use global protube:toast event for non-blocking feedback so the app
@@ -367,16 +372,16 @@ export default function VideoPage() {
           </button>
 
           <button
-            className={`action-btn ${watchLater ? 'active' : ''}`}
+            className={`action-btn ${watchLaterPlaylist?.videoIds.includes(targetVideoId) ? 'active' : ''}`}
             onClick={toggleWatchLater}
-            aria-pressed={watchLater}
-            title={watchLater ? 'Remove from Watch later' : 'Watch later'}
+            aria-pressed={watchLaterPlaylist?.videoIds.includes(targetVideoId)}
+            title={watchLaterPlaylist?.videoIds.includes(targetVideoId) ? 'Remove from Watch later' : 'Watch later'}
           >
             <ClockIcon size={18} />
             <span className="action-text">Més tard</span>
           </button>
 
-          <button className="action-btn" onClick={() => setShowPlaylistPopover(v => !v)} title="Afegir a playlist">
+          <button className="action-btn" onClick={handleAddToPlaylist} title="Afegir a playlist">
             <PlusSquare size={18} />
             <span className="action-text">Afegir</span>
           </button>
@@ -384,14 +389,14 @@ export default function VideoPage() {
           {showPlaylistPopover && (
             <div className="playlist-popover" role="dialog" aria-label="Selecciona o crea una playlist">
               <h4>Selecciona una playlist</h4>
-              {Object.keys(playlistsMap).length === 0 ? (
+              {playlists.length === 0 ? (
                 <div style={{ color: '#6b7280', marginBottom: 8 }}>No hi ha llistes encara.</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {Object.keys(playlistsMap).map(name => (
-                    <div key={name} className="playlist-item" onClick={() => addToExistingPlaylist(name)}>
-                      <span>{name}</span>
-                      <small style={{ color: '#6b7280' }}>{playlistsMap[name].length} vídeos</small>
+                  {playlists.map(playlist => (
+                    <div key={playlist.id} className="playlist-item" onClick={() => addToExistingPlaylist(playlist)}>
+                      <span>{playlist.name}</span>
+                      <small style={{ color: '#6b7280' }}>{playlist.videoIds.length} vídeos</small>
                     </div>
                   ))}
                 </div>

@@ -40,10 +40,28 @@ class ComentariControllerTest {
         ComentariDTO saved = new ComentariDTO("c1","u1","v1","t","d");
         when(comentariService.create(dto, dto.userId())).thenReturn(saved);
         ResponseEntity<String> resp = comentariController.saveComentario(dto);
-    assertEquals(200, resp.getStatusCode().value());
+        assertEquals(200, resp.getStatusCode().value());
         var body = resp.getBody();
         assertNotNull(body);
         assertTrue(body.contains("c1"));
+    }
+
+    @Test
+    void saveComentario_handlesIllegalArgumentException() {
+        ComentariDTO dto = new ComentariDTO(null, "u1","v1","t","d");
+        when(comentariService.create(dto, "u1")).thenThrow(new IllegalArgumentException("Invalid input"));
+        
+        ResponseEntity<String> resp = comentariController.saveComentario(dto);
+        assertEquals(400, resp.getStatusCode().value());
+        assertEquals("Invalid input", resp.getHeaders().getFirst("X-Error"));
+    }
+
+    @Test
+    void saveComentario_handlesNullDto() {
+        when(comentariService.create(null, null)).thenThrow(new IllegalArgumentException("dto is null"));
+        
+        ResponseEntity<String> resp = comentariController.saveComentario(null);
+        assertEquals(400, resp.getStatusCode().value());
     }
 
     @Test
@@ -68,7 +86,7 @@ class ComentariControllerTest {
     void getComentarioById_found() {
         when(comentariService.findById("1")).thenReturn(Optional.of(new ComentariDTO("1","u1","v1","t","d")));
         var resp = comentariController.getComentarioById("1");
-    assertEquals(200, resp.getStatusCode().value());
+        assertEquals(200, resp.getStatusCode().value());
         var body = resp.getBody();
         assertNotNull(body);
         assertEquals("1", body.id());
@@ -78,21 +96,21 @@ class ComentariControllerTest {
     void getComentarioById_notFound() {
         when(comentariService.findById("1")).thenReturn(Optional.empty());
         var resp = comentariController.getComentarioById("1");
-    assertEquals(404, resp.getStatusCode().value());
+        assertEquals(404, resp.getStatusCode().value());
     }
 
     @Test
     void deleteComentario_removed() {
         when(comentariService.deleteById("1")).thenReturn(true);
         var resp = comentariController.deleteComentario("1");
-    assertEquals(204, resp.getStatusCode().value());
+        assertEquals(204, resp.getStatusCode().value());
     }
 
     @Test
     void deleteComentario_notFound() {
         when(comentariService.deleteById("1")).thenReturn(false);
         var resp = comentariController.deleteComentario("1");
-    assertEquals(404, resp.getStatusCode().value());
+        assertEquals(404, resp.getStatusCode().value());
     }
 
     @Test

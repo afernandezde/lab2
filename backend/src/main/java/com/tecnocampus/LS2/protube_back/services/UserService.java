@@ -25,7 +25,7 @@ public class UserService {
     public List<UserDTO> listAllUsers() {
         List<User> users = repository.findAll();
         return users.stream()
-                .map(user -> new UserDTO(user.getId(), user.getUsername(), user.getEmail()))
+                .map(user -> new UserDTO(user.getId(), user.getUsername(), user.getEmail(), user.getDescription(), user.getAvatar(), user.getTitle()))
                 .toList();
     }
 
@@ -72,5 +72,26 @@ public class UserService {
             throw new RuntimeException("This email is not registered.");
         }
         return userOpt.get().getUsername();
+    }
+
+    public UserDTO getUser(String username) {
+        Optional<User> userOpt = repository.findByUsername(username);
+        if (userOpt.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+        User user = userOpt.get();
+        return new UserDTO(user.getId(), user.getUsername(), user.getEmail(), user.getDescription(), user.getAvatar(), user.getTitle());
+    }
+
+    public void updateProfile(String username, String description, String avatar, String title) {
+        Optional<User> userOpt = repository.findByUsername(username);
+        if (userOpt.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+        User user = userOpt.get();
+        if (description != null) user.setDescription(description);
+        if (avatar != null) user.setAvatar(avatar);
+        if (title != null) user.setTitle(title);
+        repository.save(user);
     }
 }

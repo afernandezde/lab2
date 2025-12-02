@@ -28,7 +28,10 @@ class UserControllerTest {
 
     @Test
     void listUsersReturnsDtoList() {
-        List<UserDTO> dtos = Arrays.asList(new UserDTO("id1", "alice", "a@example.com"), new UserDTO("id2", "bob", "b@example.com"));
+        List<UserDTO> dtos = Arrays.asList(
+            new UserDTO("id1", "alice", "a@example.com", null, null, null), 
+            new UserDTO("id2", "bob", "b@example.com", null, null, null)
+        );
         when(userService.listAllUsers()).thenReturn(dtos);
 
         ResponseEntity<List<UserDTO>> res = controller.listUsers();

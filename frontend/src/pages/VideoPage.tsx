@@ -25,13 +25,25 @@ export default function VideoPage() {
   const [comments, setComments] = useState<Array<{ id: string | number; username?: string; text: string; createdAt: number }>>([]);
   const [backendVideoId, setBackendVideoId] = useState<string | undefined>(video?.videoId);
   const [commentText, setCommentText] = useState('');
-  const [isAuthenticated] = useState<boolean>(() => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
       return Boolean(localStorage.getItem('protube_user'));
     } catch (e) {
       return false;
     }
   });
+
+  useEffect(() => {
+    const onUpdate = (e: Event) => {
+      // @ts-ignore
+      const detail = e.detail;
+      if (detail && detail.type === 'auth') {
+        setIsAuthenticated(!!detail.loggedIn);
+      }
+    };
+    window.addEventListener('protube:update', onUpdate);
+    return () => window.removeEventListener('protube:update', onUpdate);
+  }, []);
 
   // If we have a videoId from navigation state, use it immediately
   useEffect(() => {

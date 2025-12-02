@@ -44,6 +44,42 @@ function App() {
   const [createOpen, setCreateOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  const fetchAvatar = useCallback(async (user: string) => {
+      try {
+          // First resolve username if it's an email
+          let finalUsername = user;
+          if (user.includes('@')) {
+              const res = await fetch(`/api/users/username?email=${encodeURIComponent(user)}`);
+              if (res.ok) finalUsername = await res.text();
+          }
+          
+          const res = await fetch(`/api/users/${finalUsername}`);
+          if (res.ok) {
+              const data = await res.json();
+              setAvatarUrl(data.avatar || null);
+          }
+      } catch (e) {
+          console.error("Failed to fetch avatar", e);
+      }
+  }, []);
+
+  useEffect(() => {
+      if (username) {
+          fetchAvatar(username);
+      } else {
+          setAvatarUrl(null);
+      }
+  }, [username, fetchAvatar]);
+
+  useEffect(() => {
+      const onProfileUpdate = () => {
+          if (username) fetchAvatar(username);
+      };
+      window.addEventListener('protube:profile-update', onProfileUpdate);
+      return () => window.removeEventListener('protube:profile-update', onProfileUpdate);
+  }, [username, fetchAvatar]);
 
   // Global toast listener so any page can fire a non-blocking message
   useEffect(() => {
@@ -57,12 +93,15 @@ function App() {
     window.addEventListener('protube:toast', onToast as EventListener);
     const onOpenUpload = () => setUploadOpen(true);
     const onCloseUpload = () => setUploadOpen(false);
+    const onOpenLogin = () => setShowLogin(true);
     window.addEventListener('protube:open-upload', onOpenUpload as EventListener);
     window.addEventListener('protube:close-upload', onCloseUpload as EventListener);
+    window.addEventListener('protube:open-login', onOpenLogin as EventListener);
     return () => {
       window.removeEventListener('protube:toast', onToast as EventListener);
       window.removeEventListener('protube:open-upload', onOpenUpload as EventListener);
       window.removeEventListener('protube:close-upload', onCloseUpload as EventListener);
+      window.removeEventListener('protube:open-login', onOpenLogin as EventListener);
     };
   }, []);
 
@@ -120,6 +159,7 @@ function App() {
                   localStorage.setItem('protube_user', name);
                 } catch (e) {}
               }
+              try { window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'auth', loggedIn: true } })); } catch (e) {}
             }}
           />
         )}
@@ -168,7 +208,11 @@ function App() {
                   aria-haspopup="true"
                   aria-expanded={userMenuOpen}
                 >
-                  <CircleUser size={28} color="white" strokeWidth={0.8} />
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="avatar" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', marginRight: 8 }} />
+                  ) : (
+                    <CircleUser size={28} color="white" strokeWidth={0.8} />
+                  )}
                   <span className="user-name">{username ?? 'Perfil'}</span>
                 </button>
 

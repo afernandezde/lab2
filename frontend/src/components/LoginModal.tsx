@@ -22,7 +22,7 @@ export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8080/api/users/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
+      const res = await fetch(`/api/users/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
         method: 'POST',
       });
       if (!res.ok) {
@@ -40,7 +40,7 @@ export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
         setTimeout(async () => {
           let nameToUse: string | undefined = undefined;
           try {
-            const unameRes = await fetch(`http://localhost:8080/api/users/username?email=${encodeURIComponent(email)}`);
+            const unameRes = await fetch(`/api/users/username?email=${encodeURIComponent(email)}`);
             if (unameRes.ok) {
               const body = await unameRes.text();
               // backend returns plain username string

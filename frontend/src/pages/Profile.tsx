@@ -11,12 +11,13 @@ const PROFILE_KEY = 'protube_channel_profile';
 type ChannelProfile = { title: string; description?: string; avatarDataUrl?: string };
 
 const Profile: React.FC = () => {
-  const username = (() => { try { return localStorage.getItem('protube_username') || 'Mi canal'; } catch { return 'Mi canal'; } })();
+  const [username, setUsername] = useState(() => { try { return localStorage.getItem('protube_username') || 'Mi canal'; } catch { return 'Mi canal'; } });
+  const [isLoggedIn, setIsLoggedIn] = useState(() => { try { return !!localStorage.getItem('protube_user'); } catch { return false; } });
 
   const [videos, setVideos] = useState<ChannelVideo[]>(() => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; } });
 
   const [postText, setPostText] = useState('');
-  const [posts, setPosts] = useState<Post[]>(() => { try { return JSON.parse(localStorage.getItem(POSTS_KEY) || '[]'); } catch { return []; } });
+  const [posts, setPosts] = useState<Post[]>([]);
   const postTextRef = useRef<HTMLTextAreaElement | null>(null);
   
   const [postMedia, setPostMedia] = useState<{ type: 'image' | 'video', url: string } | null>(null);
@@ -30,10 +31,27 @@ const Profile: React.FC = () => {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
+  // Load posts for current user
+  useEffect(() => {
+      const key = `${POSTS_KEY}_${username}`;
+      try {
+          const saved = JSON.parse(localStorage.getItem(key) || '[]');
+          setPosts(saved);
+      } catch {
+          setPosts([]);
+      }
+  }, [username]);
+
   useEffect(() => { const h = location.hash || window.location.hash; if (h === '#post') setTimeout(() => postTextRef.current?.focus(), 50); }, [location]);
 
   const saveVideos = (next: ChannelVideo[]) => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); setVideos(next); } catch {} };
-  const savePosts = (next: Post[]) => { try { localStorage.setItem(POSTS_KEY, JSON.stringify(next)); setPosts(next); } catch {} };
+  const savePosts = (next: Post[]) => { 
+      try { 
+          const key = `${POSTS_KEY}_${username}`;
+          localStorage.setItem(key, JSON.stringify(next)); 
+          setPosts(next); 
+      } catch {} 
+  };
 
   const createPost = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -56,7 +74,63 @@ const Profile: React.FC = () => {
 
   const deletePost = (id: string) => { if (!window.confirm('Eliminar aquesta publicació?')) return; const next = posts.filter(p => p.id !== id); savePosts(next); };
 
-  const [profile, setProfile] = useState<ChannelProfile>(() => { try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}') as ChannelProfile || { title: localStorage.getItem('protube_username') || 'Mi canal' }; } catch { return { title: localStorage.getItem('protube_username') || 'Mi canal' }; } });
+  const [profile, setProfile] = useState<ChannelProfile>({ title: localStorage.getItem('protube_username') || 'Mi canal' });
+
+  const resolveUsername = async (identifier: string | null): Promise<string | null> => {
+      if (!identifier) return null;
+      if (identifier.includes('@')) {
+          try {
+              const res = await fetch(`/api/users/username?email=${encodeURIComponent(identifier)}`);
+              if (res.ok) return await res.text();
+          } catch {}
+      }
+      return identifier;
+  };
+
+  useEffect(() => {
+    const init = async () => {
+        let identifier = localStorage.getItem('protube_username') || localStorage.getItem('protube_user_id') || localStorage.getItem('protube_user');
+        const realUsername = await resolveUsername(identifier);
+        
+        if (realUsername) {
+            fetch(`/api/users/${realUsername}`)
+                .then(res => {
+                    if (res.ok) return res.json();
+                    throw new Error('Failed to fetch profile');
+                })
+                .then(data => {
+                    setProfile({
+                        title: data.title || data.username || 'Mi canal',
+                        description: data.description,
+                        avatarDataUrl: data.avatar
+                    });
+                })
+                .catch(err => console.error(err));
+        } else {
+            setProfile({ title: 'Mi canal' });
+        }
+    };
+    init();
+
+    const onUpdate = (e: Event) => {
+        // @ts-ignore
+        const detail = e.detail;
+        if (detail && detail.type === 'auth') {
+            if (detail.loggedIn === false) {
+                 setProfile({ title: 'Mi canal', description: undefined, avatarDataUrl: undefined });
+                 setUsername('Mi canal');
+                 setIsLoggedIn(false);
+            } else {
+                 init();
+                 setUsername(localStorage.getItem('protube_username') || 'Mi canal');
+                 setIsLoggedIn(true);
+            }
+        }
+    };
+    window.addEventListener('protube:update', onUpdate);
+    return () => window.removeEventListener('protube:update', onUpdate);
+  }, []);
+
   const [customOpen, setCustomOpen] = useState(false);
   const [editTitle, setEditTitle] = useState(profile.title || '');
   const [editDesc, setEditDesc] = useState(profile.description || '');
@@ -65,7 +139,51 @@ const Profile: React.FC = () => {
 
   useEffect(() => { setEditTitle(profile.title || localStorage.getItem('protube_username') || 'Mi canal'); setEditDesc(profile.description || ''); setEditAvatarDataUrl(profile.avatarDataUrl); }, [profile]);
 
-  const saveProfile = () => { const next: ChannelProfile = { title: editTitle || (localStorage.getItem('protube_username') || 'Mi canal'), description: editDesc || '', avatarDataUrl: editAvatarDataUrl }; try { localStorage.setItem(PROFILE_KEY, JSON.stringify(next)); setProfile(next); } catch {} setCustomOpen(false); };
+  const saveProfile = async () => {
+    let identifier = localStorage.getItem('protube_username') || localStorage.getItem('protube_user_id') || localStorage.getItem('protube_user');
+    
+    if (!identifier) {
+        alert('Session expired. Please log in again.');
+        window.dispatchEvent(new CustomEvent('protube:open-login'));
+        return;
+    }
+
+    const username = await resolveUsername(identifier);
+    if (!username) {
+        alert('Could not resolve username.');
+        return;
+    }
+
+    const next: ChannelProfile = { 
+        title: editTitle || username || 'Mi canal', 
+        description: editDesc || '', 
+        avatarDataUrl: editAvatarDataUrl 
+    };
+    
+    try {
+        const res = await fetch(`/api/users/${username}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                description: next.description,
+                avatar: next.avatarDataUrl,
+                title: next.title
+            })
+        });
+        
+        if (res.ok) {
+            setProfile(next);
+            setCustomOpen(false);
+            window.dispatchEvent(new CustomEvent('protube:profile-update'));
+        } else {
+            const txt = await res.text();
+            alert('Error saving profile: ' + txt);
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Error saving profile: ' + String(e));
+    }
+  };
   const handleAvatarFile = (f: File | null) => { if (!f) return; const r = new FileReader(); r.onload = () => setEditAvatarDataUrl(String(r.result || '')); r.readAsDataURL(f); };
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   
@@ -88,53 +206,61 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
       if (activeTab === 'comments') {
-          const uid = localStorage.getItem('protube_username') || localStorage.getItem('protube_user_id') || localStorage.getItem('protube_user');
-          if (uid) {
-              setCommentsLoading(true);
+          const initComments = async () => {
+              let identifier = localStorage.getItem('protube_username') || localStorage.getItem('protube_user_id') || localStorage.getItem('protube_user');
+              const uid = await resolveUsername(identifier);
               
-              const p1 = fetch(`/api/comentaris/user/${uid}`).then(res => res.ok ? res.json() : []);
-              
-              const p2 = fetch('/api/videos/all')
-                  .then(res => res.ok ? res.json() : [])
-                  .then(async (allVideos: any[]) => {
-                      // Create video map
-                      const vMap: Record<string, { title: string, fileName: string }> = {};
-                      allVideos.forEach(v => {
-                          vMap[v.videoId] = { title: v.title || v.fileName, fileName: v.fileName };
-                      });
-                      setVideoMap(vMap);
-
-                      const myVideos = allVideos.filter(v => v.userId === uid);
-                      const myVideoIds = new Set(myVideos.map(v => v.videoId));
-                      
-                      const resMap = await fetch('/api/comentaris/map');
-                      if (resMap.ok) {
-                          const map: Record<string, any[]> = await resMap.json();
-                          let received: any[] = [];
-                          Object.keys(map).forEach(vid => {
-                              if (myVideoIds.has(vid)) {
-                                  const comments = map[vid].map(c => ({ ...c, videoId: vid }));
-                                  received = [...received, ...comments];
-                              }
+              if (uid) {
+                  setCommentsLoading(true);
+                  
+                  const p1 = fetch(`/api/comentaris/user/${uid}`).then(res => res.ok ? res.json() : []);
+                  
+                  const p2 = fetch('/api/videos/all')
+                      .then(res => res.ok ? res.json() : [])
+                      .then(async (allVideos: any[]) => {
+                          // Create video map
+                          const vMap: Record<string, { title: string, fileName: string }> = {};
+                          allVideos.forEach(v => {
+                              vMap[v.videoId] = { title: v.title || v.fileName, fileName: v.fileName };
                           });
-                          return received;
-                      }
-                      return [];
-                  });
-
-              Promise.all([p1, p2])
-                  .then(([made, received]) => {
-                      setUserComments(made);
-                      setReceivedComments(received);
-                  })
-                  .catch(() => {
-                      setUserComments([]);
-                      setReceivedComments([]);
-                  })
-                  .finally(() => setCommentsLoading(false));
-          }
+                          setVideoMap(vMap);
+    
+                          const myVideos = allVideos.filter(v => v.userId === uid);
+                          const myVideoIds = new Set(myVideos.map(v => v.videoId));
+                          
+                          const resMap = await fetch('/api/comentaris/map');
+                          if (resMap.ok) {
+                              const map: Record<string, any[]> = await resMap.json();
+                              let received: any[] = [];
+                              Object.keys(map).forEach(vid => {
+                                  if (myVideoIds.has(vid)) {
+                                      const comments = map[vid].map(c => ({ ...c, videoId: vid }));
+                                      received = [...received, ...comments];
+                                  }
+                              });
+                              return received;
+                          }
+                          return [];
+                      });
+    
+                  Promise.all([p1, p2])
+                      .then(([made, received]) => {
+                          setUserComments(made);
+                          setReceivedComments(received);
+                      })
+                      .catch(() => {
+                          setUserComments([]);
+                          setReceivedComments([]);
+                      })
+                      .finally(() => setCommentsLoading(false));
+              } else {
+                  setUserComments([]);
+                  setReceivedComments([]);
+              }
+          };
+          initComments();
       }
-  }, [activeTab]);
+  }, [activeTab, username]);
 
   const deleteUserComment = async (cid: string) => {
       if (!window.confirm('Eliminar aquest comentari?')) return;
@@ -155,22 +281,25 @@ const Profile: React.FC = () => {
         <div className="channel-meta">
           <h1 className="channel-title">{profile.title || username}</h1>
           <div className="channel-handle">@{(profile.title || username).replace(/\s+/g, '')}</div>
-          <p className="channel-desc">{(() => { const full = profile.description || 'Més informació sobre aquest canal ...'; const needTruncate = full.length > 140; if (!profile.description) return (<>{full} <button type="button" className="link-like" onClick={() => setCustomOpen(true)} style={{ marginLeft: 6 }}>més</button></>); return (<>{descExpanded || !needTruncate ? full : (full.slice(0, 140) + '...')}{needTruncate && (<button type="button" className="link-like" onClick={() => setDescExpanded(s => !s)} style={{ marginLeft: 6 }}>{descExpanded ? 'menys' : 'més'}</button>)}</>); })()}</p>
-          <div className="channel-actions"><button className="action-btn" onClick={() => setCustomOpen(true)}>Personalitza el canal</button><button className="action-btn secondary" onClick={() => navigate('/my-videos')}>Gestiona els vídeos</button></div>
+          <p className="channel-desc">{(() => { const full = profile.description || 'Més informació sobre aquest canal ...'; const needTruncate = full.length > 140; if (!profile.description) return (<>{full} <button type="button" className="link-like" onClick={() => { if (!isLoggedIn) { window.dispatchEvent(new CustomEvent('protube:open-login')); return; } setCustomOpen(true); }} style={{ marginLeft: 6 }}>més</button></>); return (<>{descExpanded || !needTruncate ? full : (full.slice(0, 140) + '...')}{needTruncate && (<button type="button" className="link-like" onClick={() => setDescExpanded(s => !s)} style={{ marginLeft: 6 }}>{descExpanded ? 'menys' : 'més'}</button>)}</>); })()}</p>
+          <div className="channel-actions">
+              <button className="action-btn" onClick={() => { if (!isLoggedIn) { window.dispatchEvent(new CustomEvent('protube:open-login')); return; } setCustomOpen(true); }}>Personalitza el canal</button>
+              <button className="action-btn secondary" onClick={() => { if (!isLoggedIn) { window.dispatchEvent(new CustomEvent('protube:open-login')); return; } navigate('/my-videos'); }}>Gestiona els vídeos</button>
+          </div>
         </div>
       </div>
 
       {activeTab === 'posts' && (
       <div className="channel-postbox">
-        <form onSubmit={createPost} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <form onSubmit={(e) => { if (!isLoggedIn) { e.preventDefault(); window.dispatchEvent(new CustomEvent('protube:open-login')); return; } createPost(e); }} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div className="postbox-header">
             <div className="postbox-avatar">{profile.avatarDataUrl ? <img src={profile.avatarDataUrl} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '999px', objectFit: 'cover' }} /> : (username || 'U').charAt(0).toUpperCase()}</div>
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <textarea ref={postTextRef} value={postText} onChange={e => setPostText(e.target.value)} placeholder="Crea una publicació" rows={2} />
+              <textarea ref={postTextRef} value={postText} onChange={e => setPostText(e.target.value)} onClick={() => { if (!isLoggedIn) window.dispatchEvent(new CustomEvent('protube:open-login')); }} placeholder="Crea una publicació" rows={2} />
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
                 <label className="postbox-tools" style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
                   <input ref={el => { postMediaInputRef.current = el; }} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={e => onChoosePostMedia(e.target.files ? e.target.files[0] : null)} />
-                  <button type="button" className="ghost" onClick={() => postMediaInputRef.current?.click()}>Afegeix foto/vídeo</button>
+                  <button type="button" className="ghost" onClick={() => { if (!isLoggedIn) { window.dispatchEvent(new CustomEvent('protube:open-login')); return; } postMediaInputRef.current?.click(); }}>Afegeix foto/vídeo</button>
                   {postMedia && (
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           {postMedia.type === 'image' ? 

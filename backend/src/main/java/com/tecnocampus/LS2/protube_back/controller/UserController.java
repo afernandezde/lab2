@@ -8,7 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import com.tecnocampus.LS2.protube_back.controller.dto.UserDTO;
+import com.tecnocampus.LS2.protube_back.controller.dto.UserProfileUpdateDTO;
 import java.util.List;
 
 @RestController
@@ -74,6 +78,28 @@ public class UserController {
             } else {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(msg != null ? msg : "Internal server error");
             }
+        }
+    }
+
+    @GetMapping("/{username}")
+    public ResponseEntity<UserDTO> getUser(@PathVariable String username) {
+        try {
+            return ResponseEntity.ok(userService.getUser(username));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @PutMapping("/{username}")
+    public ResponseEntity<String> updateProfile(@PathVariable String username, @RequestBody UserProfileUpdateDTO profile) {
+        try {
+            userService.updateProfile(username, profile.description(), profile.avatar(), profile.title());
+            return ResponseEntity.ok("Profile updated successfully.");
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("User not found")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
 }

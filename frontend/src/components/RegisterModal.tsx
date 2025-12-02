@@ -24,7 +24,7 @@ export default function RegisterModal({ onClose, onRegistered, onBackToLogin }: 
     setSuccess(false);
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8080/api/users/register?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&username=${encodeURIComponent(username)}`, {
+      const res = await fetch(`/api/users/register?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&username=${encodeURIComponent(username)}`, {
         method: 'POST',
       });
       if (!res.ok) {

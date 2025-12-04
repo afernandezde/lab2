@@ -257,7 +257,10 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.12</version>
                 <configuration>
-                    <excludes>com/tecnocampus/LS2/protube_back/ProtubeBackApplication*</excludes>
+                    <excludes>
+                        com/tecnocampus/LS2/protube_back/ProtubeBackApplication*
+                        com/tecnocampus/LS2/protube_back/AppStartupRunner*
+                    </excludes>
                 </configuration>
                 <executions>
                     <execution>

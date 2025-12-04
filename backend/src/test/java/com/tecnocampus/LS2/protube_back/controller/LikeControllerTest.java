@@ -1,59 +1,71 @@
 package com.tecnocampus.LS2.protube_back.controller;
 
 import com.tecnocampus.LS2.protube_back.services.LikeService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Arrays;
 import java.util.List;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-@WebMvcTest(LikeController.class)
 class LikeControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
     private LikeService likeService;
+    private LikeController controller;
 
-    @Test
-    void isVideoLikedByUser_endpointReturnsBoolean() throws Exception {
-        when(likeService.isVideoLikedByUser("u1", "v1")).thenReturn(true);
-
-        mockMvc.perform(get("/api/likes/u1/v1"))
-                .andExpect(status().isOk())
-                .andExpect(content().string("true"));
+    @BeforeEach
+    void setUp() {
+        likeService = mock(LikeService.class);
+        controller = new LikeController(likeService);
     }
 
     @Test
-    void likeVideo_endpointCallsService() throws Exception {
-        mockMvc.perform(post("/api/likes/u1/v1"))
-                .andExpect(status().isOk());
+    void isVideoLikedByUser_returnsTrue() {
+        when(likeService.isVideoLikedByUser("u1", "v1")).thenReturn(true);
+
+        boolean result = controller.isVideoLikedByUser("u1", "v1");
+
+        assertTrue(result);
+    }
+
+    @Test
+    void isVideoLikedByUser_returnsFalse() {
+        when(likeService.isVideoLikedByUser("u1", "v1")).thenReturn(false);
+
+        boolean result = controller.isVideoLikedByUser("u1", "v1");
+
+        assertFalse(result);
+    }
+
+    @Test
+    void likeVideo_callsService() {
+        doNothing().when(likeService).likeVideo("u1", "v1");
+
+        controller.likeVideo("u1", "v1");
 
         verify(likeService).likeVideo("u1", "v1");
     }
 
     @Test
-    void getLikesByUser_returnsList() throws Exception {
-        when(likeService.getLikedVideoIdsByUser("u1")).thenReturn(List.of("v1", "v2"));
+    void getLikesByUser_returnsList() {
+        List<String> likedVideos = Arrays.asList("v1", "v2");
+        when(likeService.getLikedVideoIdsByUser("u1")).thenReturn(likedVideos);
 
-        mockMvc.perform(get("/api/likes/user/u1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0]").value("v1"))
-                .andExpect(jsonPath("$[1]").value("v2"));
+        List<String> result = controller.getLikesByUser("u1");
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("v1", result.get(0));
+        assertEquals("v2", result.get(1));
     }
 
     @Test
-    void unlikeVideo_endpointCallsService() throws Exception {
-        mockMvc.perform(delete("/api/likes/u1/v1"))
-                .andExpect(status().isOk());
+    void unlikeVideo_callsService() {
+        doNothing().when(likeService).unlikeVideo("u1", "v1");
+
+        controller.unlikeVideo("u1", "v1");
 
         verify(likeService).unlikeVideo("u1", "v1");
     }

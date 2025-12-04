@@ -34,7 +34,12 @@ public class ComentariRepository {
 
 	@PostConstruct
 	public void load() {
+		if (storeDir == null || storeDir.isBlank()) {
+			// no store directory configured (likely in unit tests); skip loading from disk
+			return;
+		}
 		File f = getFile();
+
 		if (f.exists()) {
 			try {
 				List<Comentari> list = objectMapper.readValue(f, new TypeReference<List<Comentari>>() {});
@@ -50,13 +55,15 @@ public class ComentariRepository {
 	}
 
 	private void saveToFile() {
-		try {
-			File f = getFile();
-			if (!f.getParentFile().exists()) f.getParentFile().mkdirs();
-			objectMapper.writeValue(f, new ArrayList<>(store.values()));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+			// if storeDir not configured, skip persisting to disk (use in-memory only)
+			if (storeDir == null || storeDir.isBlank()) return;
+			try {
+				File f = getFile();
+				if (f.getParentFile() != null && !f.getParentFile().exists()) f.getParentFile().mkdirs();
+				objectMapper.writeValue(f, new ArrayList<>(store.values()));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 	}
 
 	public Comentari save(Comentari c) {

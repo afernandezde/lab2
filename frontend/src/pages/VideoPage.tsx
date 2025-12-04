@@ -108,10 +108,17 @@ export default function VideoPage() {
 
   // Likes / watch later / playlists state
   const [liked, setLiked] = useState<boolean>(false);
+  const [likeLoading, setLikeLoading] = useState<boolean>(false);
   const [watchLaterPlaylist, setWatchLaterPlaylist] = useState<{ id: string; videoIds: string[] } | null>(null);
   const [playlists, setPlaylists] = useState<Array<{ id: string; name: string; videoIds: string[] }>>([]);
   const [showPlaylistPopover, setShowPlaylistPopover] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
+  // Refs for positioning the inline popover near the Add button
+  const actionsRef = useRef<HTMLDivElement | null>(null);
+  const addButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [popoverPos, setPopoverPos] = useState<{ left: number; top: number } | null>(null);
+
+  
 
   const userId = localStorage.getItem('protube_user_id') || localStorage.getItem('protube_user');
   const targetVideoId = backendVideoId || videoKey;
@@ -141,16 +148,72 @@ export default function VideoPage() {
     }
   }, [videoKey, userId, backendVideoId]);
 
-  const toggleLiked = () => {
+  // When a user is logged in, ask backend whether the video is liked by this user
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      if (!userId || !targetVideoId) return;
+      try {
+        const res = await fetch(`/api/likes/${encodeURIComponent(userId)}/${encodeURIComponent(targetVideoId)}`);
+        if (cancelled) return;
+        if (res.ok) {
+          // controller returns boolean body
+          try {
+            const text = await res.text();
+            const parsed = text ? JSON.parse(text) : false;
+            setLiked(Boolean(parsed));
+          } catch (e) {
+            setLiked(false);
+          }
+        } else {
+          setLiked(false);
+        }
+      } catch (e) {
+        if (!cancelled) setLiked(false);
+      }
+    };
+    check();
+    return () => { cancelled = true; };
+  }, [userId, targetVideoId]);
+
+  const toggleLiked = async () => {
+    // Require login to like a video
+    if (!userId) {
+      showToast('Inicia sesión para usar Me gusta');
+      return;
+    }
+
+    if (!targetVideoId) {
+      showToast('Video no disponible');
+      return;
+    }
+
+    setLikeLoading(true);
     try {
-      const raw = localStorage.getItem('protube_liked') || '[]';
-      const arr = (JSON.parse(raw) as string[]) || [];
-      const exists = arr.includes(videoKey);
-      const next = exists ? arr.filter(x => x !== videoKey) : [videoKey, ...arr];
-      localStorage.setItem('protube_liked', JSON.stringify(next));
-      setLiked(!exists);
-      if (!exists) showToast("Afegit a M'agrada"); else showToast("Eliminat de M'agrada");
-    } catch (e) {}
+      const url = `/api/likes/${encodeURIComponent(userId)}/${encodeURIComponent(targetVideoId)}`;
+      if (!liked) {
+        const res = await fetch(url, { method: 'POST' });
+        if (!res.ok) {
+          showToast('No se pudo añadir a Me Gusta');
+          return;
+        }
+        setLiked(true);
+        showToast("Afegit a M'agrada");
+      } else {
+        const res = await fetch(url, { method: 'DELETE' });
+        if (!res.ok) {
+          showToast('No se pudo eliminar Me Gusta');
+          return;
+        }
+        setLiked(false);
+        showToast("Eliminat de M'agrada");
+      }
+    } catch (e) {
+      console.error('toggleLiked backend error', e);
+      showToast('Error al procesar Me Gusta');
+    } finally {
+      setLikeLoading(false);
+    }
   };
 
   const toggleWatchLater = async () => {
@@ -199,6 +262,21 @@ export default function VideoPage() {
     if (!userId) {
       showToast('Inicia sessió per crear playlists');
       return;
+    }
+    // compute position relative to the actions container so the popover appears near the button
+    const btn = addButtonRef.current;
+    const container = actionsRef.current;
+    if (btn && container) {
+      const btnRect = btn.getBoundingClientRect();
+      const contRect = container.getBoundingClientRect();
+      // Position the popover to the right of the Add button (side-by-side)
+      const gap = 8;
+      const left = btnRect.right - contRect.left + gap;
+      // Align top near button's top so it appears at the same vertical level
+      const top = btnRect.top - contRect.top - 4;
+      setPopoverPos({ left, top });
+    } else {
+      setPopoverPos(null);
     }
     setShowPlaylistPopover(true);
   };
@@ -255,6 +333,18 @@ export default function VideoPage() {
       window.dispatchEvent(new CustomEvent('protube:toast', { detail: { message: msg } }));
     } catch (e) {}
   };
+
+  // Close modal on Escape key when visible
+  useEffect(() => {
+    if (!showPlaylistPopover) return;
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape') setShowPlaylistPopover(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showPlaylistPopover]);
+
+  
 
   // Save to history when the page mounts (viewedAt = now). Keep newest first and dedupe by name
   const postedRef = useRef(false);
@@ -360,24 +450,21 @@ export default function VideoPage() {
       </div>
 
       <div>
-        <video controls width="100%" poster={posterUrl} style={{ borderRadius: 12, backgroundColor: '#000' }}>
-          <source src={videoUrl} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ flex: 1 }}>
-          <h1 className="video-title">{title}</h1>
-          {description ? <p className="video-description">{description}</p> : null}
+        <div>
+          <video controls width="100%" poster={posterUrl} style={{ borderRadius: 12, backgroundColor: '#000' }}>
+            <source src={videoUrl} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
         </div>
 
-  <div className="video-actions" style={{ display: 'flex', gap: 8, position: 'relative' }}>
+        <div ref={actionsRef} style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', width: '100%', position: 'relative' }} className="video-actions">
           <button
             className={`action-btn ${liked ? 'active' : ''}`}
             onClick={toggleLiked}
             aria-pressed={liked}
             title={liked ? 'Unlike' : 'Like'}
+            disabled={likeLoading}
+            aria-busy={likeLoading}
           >
             <Heart size={18} />
             <span className="action-text">M'agrada</span>
@@ -393,41 +480,71 @@ export default function VideoPage() {
             <span className="action-text">Més tard</span>
           </button>
 
-          <button className="action-btn" onClick={handleAddToPlaylist} title="Afegir a playlist">
+          <button ref={addButtonRef} className="action-btn" onClick={handleAddToPlaylist} title="Afegir a playlist">
             <PlusSquare size={18} />
             <span className="action-text">Afegir</span>
           </button>
-
-          {showPlaylistPopover && (
-            <div className="playlist-popover" role="dialog" aria-label="Selecciona o crea una playlist">
-              <h4>Selecciona una playlist</h4>
-              {playlists.length === 0 ? (
-                <div style={{ color: '#6b7280', marginBottom: 8 }}>No hi ha llistes encara.</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {playlists.map(playlist => (
-                    <div key={playlist.id} className="playlist-item" onClick={() => addToExistingPlaylist(playlist)}>
-                      <span>{playlist.name}</span>
-                      <small style={{ color: '#6b7280' }}>{playlist.videoIds.length} vídeos</small>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div style={{ height: 1, background: '#eef2f7', margin: '8px 0' }} />
-
-              <div className="playlist-create">
-                <input
-                  aria-label="Nom nova playlist"
-                  value={newPlaylistName}
-                  onChange={e => setNewPlaylistName(e.target.value)}
-                  placeholder="Nou nom de playlist"
-                />
-                <button className="action-btn" onClick={() => createAndAddPlaylist(newPlaylistName)}>Crear</button>
-              </div>
-            </div>
-          )}
         </div>
+
+        <div style={{ marginTop: 12 }}>
+          <h1 className="video-title" style={{ margin: '0 0 8px 0' }}>{title}</h1>
+          {description ? <p className="video-description">{description}</p> : null}
+        </div>
+
+        {showPlaylistPopover && (
+          <>
+          <div
+            onClick={() => { setShowPlaylistPopover(false); }}
+            aria-hidden
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.25)', zIndex: 1100 }}
+          />
+          <div
+            className="playlist-popover"
+            role="dialog"
+            aria-label="Selecciona o crea una playlist"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 1200,
+              minWidth: 260,
+              maxWidth: 320,
+              width: 'auto',
+              background: '#fff',
+              borderRadius: 8,
+              padding: 8,
+              boxShadow: '0 6px 18px rgba(0,0,0,0.12)'
+            }}
+          >
+            <h4>Selecciona una playlist</h4>
+            {playlists.length === 0 ? (
+              <div style={{ color: '#6b7280', marginBottom: 8 }}>No hi ha llistes encara.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {playlists.map(playlist => (
+                  <div key={playlist.id} className="playlist-item" onClick={() => addToExistingPlaylist(playlist)}>
+                    <span>{playlist.name}</span>
+                    <small style={{ color: '#6b7280' }}>{playlist.videoIds.length} vídeos</small>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ height: 1, background: '#eef2f7', margin: '8px 0' }} />
+
+            <div className="playlist-create">
+              <input
+                aria-label="Nom nova playlist"
+                value={newPlaylistName}
+                onChange={e => setNewPlaylistName(e.target.value)}
+                placeholder="Nou nom de playlist"
+              />
+              <button className="action-btn" onClick={() => createAndAddPlaylist(newPlaylistName)}>Crear</button>
+            </div>
+          </div>
+          </>
+        )}
       </div>
 
       <section className="comments">

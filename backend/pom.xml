@@ -258,8 +258,9 @@
                 <version>0.8.12</version>
                 <configuration>
                     <excludes>
-                        com/tecnocampus/LS2/protube_back/ProtubeBackApplication*
-                        com/tecnocampus/LS2/protube_back/AppStartupRunner*
+                        <exclude>com/tecnocampus/LS2/protube_back/AppStartupRunner*</exclude>
+                        <exclude>com/tecnocampus/LS2/protube_back/ProtubeBackApplication*</exclude>
+                        <exclude>com/tecnocampus/LS2/protube_back/configuration/MvcConfig*</exclude>
                     </excludes>
                 </configuration>
                 <executions>

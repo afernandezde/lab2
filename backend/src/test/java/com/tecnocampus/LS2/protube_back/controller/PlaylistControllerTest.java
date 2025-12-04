@@ -1,5 +1,6 @@
 package com.tecnocampus.LS2.protube_back.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tecnocampus.LS2.protube_back.domain.Playlist;
 import com.tecnocampus.LS2.protube_back.services.PlaylistService;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -27,6 +27,9 @@ class PlaylistControllerTest {
     @MockBean
     private PlaylistService playlistService;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Test
     void getUserPlaylists() throws Exception {
         Playlist p1 = new Playlist("P1", "u1");
@@ -34,7 +37,18 @@ class PlaylistControllerTest {
 
         mockMvc.perform(get("/api/playlists/user/u1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("P1"));
+                .andExpect(jsonPath("$[0].name").value("P1"))
+                .andExpect(jsonPath("$[0].userId").value("u1"));
+    }
+
+    @Test
+    void getUserPlaylists_empty() throws Exception {
+        when(playlistService.getPlaylists("u1")).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/playlists/user/u1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
     }
 
     @Test
@@ -44,9 +58,21 @@ class PlaylistControllerTest {
 
         mockMvc.perform(post("/api/playlists/user/u1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("New List"))
+                        .content(objectMapper.writeValueAsString("New List")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("New List"));
+                .andExpect(jsonPath("$.name").value("New List"))
+                .andExpect(jsonPath("$.userId").value("u1"));
+    }
+
+    @Test
+    void createPlaylist_duplicate() throws Exception {
+        when(playlistService.createPlaylist("Existing", "u1"))
+                .thenThrow(new IllegalArgumentException("Duplicate"));
+
+        mockMvc.perform(post("/api/playlists/user/u1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString("Existing")))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -56,7 +82,16 @@ class PlaylistControllerTest {
 
         mockMvc.perform(get("/api/playlists/user/u1/watch-later"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Watch Later"));
+                .andExpect(jsonPath("$.name").value("Watch Later"))
+                .andExpect(jsonPath("$.userId").value("u1"));
+    }
+
+    @Test
+    void deletePlaylist() throws Exception {
+        mockMvc.perform(delete("/api/playlists/p1"))
+                .andExpect(status().isNoContent());
+
+        verify(playlistService).deletePlaylist("p1");
     }
 
     @Test
@@ -81,34 +116,5 @@ class PlaylistControllerTest {
                 .andExpect(status().isOk());
 
         verify(playlistService).removeVideoFromPlaylist("p1", "video.mp4");
-    }
-
-    @Test
-    void deletePlaylist() throws Exception {
-        mockMvc.perform(delete("/api/playlists/p1"))
-                .andExpect(status().isNoContent());
-
-        verify(playlistService).deletePlaylist("p1");
-    }
-
-    @Test
-    void createPlaylist_duplicate() throws Exception {
-        when(playlistService.createPlaylist("Existing", "u1"))
-            .thenThrow(new IllegalArgumentException("Duplicate"));
-
-        mockMvc.perform(post("/api/playlists/user/u1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("Existing"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void getUserPlaylists_empty() throws Exception {
-        when(playlistService.getPlaylists("u1")).thenReturn(Collections.emptyList());
-
-        mockMvc.perform(get("/api/playlists/user/u1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$").isEmpty());
     }
 }

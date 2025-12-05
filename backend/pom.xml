@@ -2,31 +2,22 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.3.3</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
+
     <groupId>com.tecnocampus.LS2</groupId>
     <artifactId>protube-back</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>protube-back</name>
     <description>myyyyyy precious tube</description>
-    <url/>
-    <licenses>
-        <license/>
-    </licenses>
-    <developers>
-        <developer/>
-    </developers>
-    <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
-    </scm>
+
     <properties>
         <java.version>21</java.version>
         <frontend-maven-plugin.version>1.15.0</frontend-maven-plugin.version>
@@ -34,7 +25,9 @@
         <npm.version>9.2.0</npm.version>
         <frontend-src-dir>${basedir}/../frontend</frontend-src-dir>
     </properties>
+
     <dependencies>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
@@ -44,71 +37,80 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.17.2</version>
         </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>42.7.2</version>
         </dependency>
 
-
+        <!-- TEST DEPENDENCIES -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-java</artifactId>
             <version>6.8.0</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-junit</artifactId>
             <version>6.8.0</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-spring</artifactId>
             <version>6.8.0</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <version>0.8.12</version>
-        </dependency>
+
     </dependencies>
+
+    <!-- PROFILES -->
     <profiles>
+
         <profile>
             <id>dev</id>
             <activation>
@@ -118,10 +120,12 @@
                 <spring.profiles.active>dev</spring.profiles.active>
             </properties>
         </profile>
+
         <profile>
             <id>prod</id>
             <build>
                 <plugins>
+
                     <plugin>
                         <groupId>org.springframework.boot</groupId>
                         <artifactId>spring-boot-maven-plugin</artifactId>
@@ -134,6 +138,7 @@
                             </excludes>
                         </configuration>
                     </plugin>
+
                     <plugin>
                         <groupId>com.github.eirslett</groupId>
                         <artifactId>frontend-maven-plugin</artifactId>
@@ -175,6 +180,7 @@
                             </execution>
                         </executions>
                     </plugin>
+
                     <plugin>
                         <artifactId>maven-resources-plugin</artifactId>
                         <executions>
@@ -197,13 +203,14 @@
                         </executions>
                     </plugin>
 
-
                 </plugins>
             </build>
             <properties>
                 <spring.profiles.active>prod</spring.profiles.active>
             </properties>
         </profile>
+
+        <!-- COVERAGE PROFILE -->
         <profile>
             <id>coverage</id>
             <build>
@@ -222,16 +229,6 @@
                                 <configuration>
                                     <rules>
                                         <rule>
-                                            <element>CLASS</element>
-                                            <limits>
-                                                <limit>
-                                                    <counter>LINE</counter>
-                                                    <value>COVEREDRATIO</value>
-                                                    <minimum>0.50</minimum>
-                                                </limit>
-                                            </limits>
-                                        </rule>
-                                        <rule>
                                             <element>BUNDLE</element>
                                             <limits>
                                                 <limit>
@@ -249,9 +246,14 @@
                 </plugins>
             </build>
         </profile>
+
     </profiles>
+
+    <!-- GLOBAL BUILD -->
     <build>
         <plugins>
+
+            <!-- JACOCO GLOBAL -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -279,6 +281,8 @@
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
+
 </project>

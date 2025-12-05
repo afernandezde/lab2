@@ -43,7 +43,7 @@ const Playlists: React.FC = () => {
       const res = await fetch(`/api/playlists/user/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: newPlaylistName.trim()
+        body: newPlaylistName.trim(),
       });
       if (res.ok) {
         fetchPlaylists(userId);
@@ -72,7 +72,9 @@ const Playlists: React.FC = () => {
   const removeVideo = async (playlistId: string, videoId: string) => {
     if (!window.confirm('Eliminar aquest vídeo de la playlist?')) return;
     try {
-      const res = await fetch(`/api/playlists/${playlistId}/videos/${encodeURIComponent(videoId)}`, { method: 'DELETE' });
+      const res = await fetch(`/api/playlists/${playlistId}/videos/${encodeURIComponent(videoId)}`, {
+        method: 'DELETE',
+      });
       if (res.ok && userId) {
         fetchPlaylists(userId);
       }
@@ -94,26 +96,47 @@ const Playlists: React.FC = () => {
     <div style={{ maxWidth: 1000, margin: '0 auto', padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2>Llistes de reproducció</h2>
-        <button className="action-btn" onClick={() => setShowCreateModal(true)}>Crear Playlist</button>
+        <button className="action-btn" onClick={() => setShowCreateModal(true)}>
+          Crear Playlist
+        </button>
       </div>
 
       {showCreateModal && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000
-        }}>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+          }}
+        >
           <div style={{ background: 'white', padding: 24, borderRadius: 8, width: 400, maxWidth: '90%' }}>
             <h3 style={{ marginTop: 0 }}>Nova Playlist</h3>
             <input
               autoFocus
-              style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #ccc', marginBottom: 16, boxSizing: 'border-box' }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: 6,
+                border: '1px solid #ccc',
+                marginBottom: 16,
+                boxSizing: 'border-box',
+              }}
               placeholder="Nom de la playlist"
               value={newPlaylistName}
-              onChange={e => setNewPlaylistName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && createPlaylist()}
+              onChange={(e) => setNewPlaylistName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && createPlaylist()}
             />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button className="action-btn ghost" onClick={() => setShowCreateModal(false)}>Cancel·lar</button>
-              <button className="action-btn" onClick={createPlaylist}>Crear</button>
+              <button className="action-btn ghost" onClick={() => setShowCreateModal(false)}>
+                Cancel·lar
+              </button>
+              <button className="action-btn" onClick={createPlaylist}>
+                Crear
+              </button>
             </div>
           </div>
         </div>
@@ -123,20 +146,19 @@ const Playlists: React.FC = () => {
         <p style={{ color: '#6b7280' }}>Cap llista creada.</p>
       ) : (
         <div style={{ display: 'grid', gap: 16 }}>
-          {playlists.map(playlist => (
+          {playlists.map((playlist) => (
             <div key={playlist.id} style={{ padding: 12, borderRadius: 8, background: '#fff' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ margin: '0 0 8px 0' }}>{playlist.name}</h3>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    className="action-btn ghost"
-                    onClick={() => deletePlaylist(playlist.id)}
-                  >Eliminar</button>
+                  <button className="action-btn ghost" onClick={() => deletePlaylist(playlist.id)}>
+                    Eliminar
+                  </button>
                 </div>
               </div>
               <div style={{ display: 'grid', gap: 8 }}>
-                {playlist.videoIds.map(videoKey => {
-                  // videoKey is likely the videoId (UUID) now if we use backend IDs, 
+                {playlist.videoIds.map((videoKey) => {
+                  // videoKey is likely the videoId (UUID) now if we use backend IDs,
                   // but frontend might still be using filenames or IDs.
                   // My backend stores videoIds.
                   // The frontend `videos` array has `videoId` and `name` (filename).
@@ -144,23 +166,40 @@ const Playlists: React.FC = () => {
                   // If it's a filename, find by `name`.
                   // The backend `addVideoToPlaylist` receives a `videoId`.
                   // So `videoKey` here is `videoId`.
-                  const v = videos.find(x => x.videoId === videoKey || x.name === videoKey) || { name: videoKey, title: 'Unknown Video', posterUrl: '' };
+                  const v = videos.find((x) => x.videoId === videoKey || x.name === videoKey) || {
+                    name: videoKey,
+                    title: 'Unknown Video',
+                    posterUrl: '',
+                  };
                   return (
-                    <div key={videoKey} style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div
+                      key={videoKey}
+                      style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}
+                    >
                       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                         {v.posterUrl ? (
-                          <img src={v.posterUrl} alt={v.title ?? v.name} style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 8 }} />
+                          <img
+                            src={v.posterUrl}
+                            alt={v.title ?? v.name}
+                            style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 8 }}
+                          />
                         ) : (
                           <div style={{ width: 120, height: 68, background: '#000', borderRadius: 8 }} />
                         )}
                         <div>
-                          <Link to={`/video/${encodeURIComponent(v.name)}`} state={{ video: v }} style={{ fontWeight: 700, color: '#111827', textDecoration: 'none' }}>
+                          <Link
+                            to={`/video/${encodeURIComponent(v.name)}`}
+                            state={{ video: v }}
+                            style={{ fontWeight: 700, color: '#111827', textDecoration: 'none' }}
+                          >
                             {v.title ?? v.name}
                           </Link>
                         </div>
                       </div>
                       <div>
-                        <button className="action-btn ghost" onClick={() => removeVideo(playlist.id, videoKey)}>Eliminar vídeo</button>
+                        <button className="action-btn ghost" onClick={() => removeVideo(playlist.id, videoKey)}>
+                          Eliminar vídeo
+                        </button>
                       </div>
                     </div>
                   );

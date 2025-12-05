@@ -37,7 +37,9 @@ const WatchLater: React.FC = () => {
   const removeVideo = async (videoId: string) => {
     if (!playlist) return;
     try {
-      const res = await fetch(`/api/playlists/${playlist.id}/videos/${encodeURIComponent(videoId)}`, { method: 'DELETE' });
+      const res = await fetch(`/api/playlists/${playlist.id}/videos/${encodeURIComponent(videoId)}`, {
+        method: 'DELETE',
+      });
       if (res.ok && userId) {
         fetchWatchLater(userId);
       }
@@ -56,8 +58,13 @@ const WatchLater: React.FC = () => {
   }
 
   // Map videoIds to objects but keep the original key for deletion
-  const items = (playlist?.videoIds || []).map(key => {
-    const video = videos.find(v => v.videoId === key || v.name === key) || { name: key, title: 'Unknown Video', posterUrl: '', videoId: key };
+  const items = (playlist?.videoIds || []).map((key) => {
+    const video = videos.find((v) => v.videoId === key || v.name === key) || {
+      name: key,
+      title: 'Unknown Video',
+      posterUrl: '',
+      videoId: key,
+    };
     return { ...video, originalKey: key };
   });
 
@@ -69,18 +76,38 @@ const WatchLater: React.FC = () => {
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 12 }}>
           {items.map((v, idx) => (
-            <li key={`${v.originalKey}-${idx}`} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: 8, borderRadius: 8, background: '#fff' }}>
+            <li
+              key={`${v.originalKey}-${idx}`}
+              style={{
+                display: 'flex',
+                gap: 12,
+                alignItems: 'center',
+                padding: 8,
+                borderRadius: 8,
+                background: '#fff',
+              }}
+            >
               {v.posterUrl ? (
-                <img src={v.posterUrl} alt={v.title ?? v.name} style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 8 }} />
+                <img
+                  src={v.posterUrl}
+                  alt={v.title ?? v.name}
+                  style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 8 }}
+                />
               ) : (
                 <div style={{ width: 120, height: 68, background: '#000', borderRadius: 8 }} />
               )}
               <div style={{ flex: 1, textAlign: 'left' }}>
-                <Link to={`/video/${encodeURIComponent(v.name)}`} state={{ video: v }} style={{ fontWeight: 700, color: '#111827', textDecoration: 'none' }}>
+                <Link
+                  to={`/video/${encodeURIComponent(v.name)}`}
+                  state={{ video: v }}
+                  style={{ fontWeight: 700, color: '#111827', textDecoration: 'none' }}
+                >
                   {v.title ?? v.name}
                 </Link>
               </div>
-              <button className="action-btn ghost" onClick={() => removeVideo(v.originalKey)}>Eliminar</button>
+              <button className="action-btn ghost" onClick={() => removeVideo(v.originalKey)}>
+                Eliminar
+              </button>
             </li>
           ))}
         </ul>

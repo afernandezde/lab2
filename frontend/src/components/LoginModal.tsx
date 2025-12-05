@@ -22,9 +22,12 @@ export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`/api/users/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
-        method: 'POST',
-      });
+      const res = await fetch(
+        `/api/users/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`,
+        {
+          method: 'POST',
+        }
+      );
       if (!res.ok) {
         const apiError = await res.text();
         setError(apiError);
@@ -153,7 +156,7 @@ export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
             type="email"
             placeholder="Email"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             style={{
               width: '100%',
               border: '1px solid #d1d5db',
@@ -177,7 +180,7 @@ export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
             type="password"
             placeholder="Password"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             style={{
               width: '100%',
               border: '1px solid #d1d5db',
@@ -213,11 +216,11 @@ export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
           >
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
-          {error && (
-            <p style={{ color: '#ef4444', fontSize: 13, marginTop: 8, textAlign: 'center' }}>{error}</p>
-          )}
+          {error && <p style={{ color: '#ef4444', fontSize: 13, marginTop: 8, textAlign: 'center' }}>{error}</p>}
           {success && (
-            <p style={{ color: '#22c55e', fontSize: 13, marginTop: 8, textAlign: 'center' }}>User signed in successfully!</p>
+            <p style={{ color: '#22c55e', fontSize: 13, marginTop: 8, textAlign: 'center' }}>
+              User signed in successfully!
+            </p>
           )}
           <p style={{ fontSize: 12, color: '#6b7280', marginTop: 12, textAlign: 'center' }}>
             Don't have an account yet?{' '}

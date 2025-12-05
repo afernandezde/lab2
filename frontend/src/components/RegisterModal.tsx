@@ -24,9 +24,12 @@ export default function RegisterModal({ onClose, onRegistered, onBackToLogin }: 
     setSuccess(false);
     setLoading(true);
     try {
-      const res = await fetch(`/api/users/register?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&username=${encodeURIComponent(username)}`, {
-        method: 'POST',
-      });
+      const res = await fetch(
+        `/api/users/register?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&username=${encodeURIComponent(username)}`,
+        {
+          method: 'POST',
+        }
+      );
       if (!res.ok) {
         const apiError = await res.text();
         setError(apiError);
@@ -117,7 +120,7 @@ export default function RegisterModal({ onClose, onRegistered, onBackToLogin }: 
             type="text"
             placeholder="Username"
             value={username}
-            onChange={e => setUsername(e.target.value)}
+            onChange={(e) => setUsername(e.target.value)}
             style={{
               width: '100%',
               border: '1px solid #d1d5db',
@@ -126,12 +129,12 @@ export default function RegisterModal({ onClose, onRegistered, onBackToLogin }: 
               marginBottom: 12,
               boxSizing: 'border-box',
             }}
-            onFocus={e => {
+            onFocus={(e) => {
               const t = e.currentTarget;
               t.style.borderColor = '#2563eb';
               t.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.12)';
             }}
-            onBlur={e => {
+            onBlur={(e) => {
               const t = e.currentTarget;
               t.style.borderColor = '#d1d5db';
               t.style.boxShadow = 'none';
@@ -141,7 +144,7 @@ export default function RegisterModal({ onClose, onRegistered, onBackToLogin }: 
             type="email"
             placeholder="Email"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             style={{
               width: '100%',
               border: '1px solid #d1d5db',
@@ -150,12 +153,12 @@ export default function RegisterModal({ onClose, onRegistered, onBackToLogin }: 
               marginBottom: 12,
               boxSizing: 'border-box',
             }}
-            onFocus={e => {
+            onFocus={(e) => {
               const t = e.currentTarget;
               t.style.borderColor = '#2563eb';
               t.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.12)';
             }}
-            onBlur={e => {
+            onBlur={(e) => {
               const t = e.currentTarget;
               t.style.borderColor = '#d1d5db';
               t.style.boxShadow = 'none';
@@ -165,7 +168,7 @@ export default function RegisterModal({ onClose, onRegistered, onBackToLogin }: 
             type="password"
             placeholder="Password"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             style={{
               width: '100%',
               border: '1px solid #d1d5db',
@@ -174,12 +177,12 @@ export default function RegisterModal({ onClose, onRegistered, onBackToLogin }: 
               marginBottom: 16,
               boxSizing: 'border-box',
             }}
-            onFocus={e => {
+            onFocus={(e) => {
               const t = e.currentTarget;
               t.style.borderColor = '#2563eb';
               t.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.12)';
             }}
-            onBlur={e => {
+            onBlur={(e) => {
               const t = e.currentTarget;
               t.style.borderColor = '#d1d5db';
               t.style.boxShadow = 'none';
@@ -201,11 +204,11 @@ export default function RegisterModal({ onClose, onRegistered, onBackToLogin }: 
           >
             {loading ? 'Registering...' : 'Sign up'}
           </button>
-          {error && (
-            <p style={{ color: '#ef4444', fontSize: 13, marginTop: 8, textAlign: 'center' }}>{error}</p>
-          )}
+          {error && <p style={{ color: '#ef4444', fontSize: 13, marginTop: 8, textAlign: 'center' }}>{error}</p>}
           {success && (
-            <p style={{ color: '#22c55e', fontSize: 13, marginTop: 8, textAlign: 'center' }}>User signed up successfully!</p>
+            <p style={{ color: '#22c55e', fontSize: 13, marginTop: 8, textAlign: 'center' }}>
+              User signed up successfully!
+            </p>
           )}
 
           {/* Link to go back to Sign in */}

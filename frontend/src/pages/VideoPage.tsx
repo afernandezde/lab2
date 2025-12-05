@@ -22,7 +22,9 @@ export default function VideoPage() {
 
   // Comments
   const videoKey = paramName || 'unknown';
-  const [comments, setComments] = useState<Array<{ id: string | number; username?: string; text: string; createdAt: number }>>([]);
+  const [comments, setComments] = useState<
+    Array<{ id: string | number; username?: string; text: string; createdAt: number }>
+  >([]);
   const [backendVideoId, setBackendVideoId] = useState<string | undefined>(video?.videoId);
   const [commentText, setCommentText] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -62,7 +64,7 @@ export default function VideoPage() {
         if (res.ok) {
           const all: any[] = await res.json();
           const key = decodeURIComponent(videoKey);
-          const found = all.find(v => {
+          const found = all.find((v) => {
             const fn: string = v?.fileName || '';
             const base = fn.replace(/\.[^/.]+$/, '');
             return fn === key || base === key;
@@ -74,13 +76,22 @@ export default function VideoPage() {
     };
 
     const loadComments = async (vid?: string) => {
-      if (!vid) { setComments([]); return; }
+      if (!vid) {
+        setComments([]);
+        return;
+      }
       try {
         const res = await fetch(`${API}/comentaris/video/${encodeURIComponent(vid)}`);
         if (cancelled) return;
         if (res.ok) {
-          const data: Array<{ id: string; userId: string; videoId: string; titulo?: string; descripcion?: string }>|null = await res.json();
-          const mapped = (data || []).map(d => ({
+          const data: Array<{
+            id: string;
+            userId: string;
+            videoId: string;
+            titulo?: string;
+            descripcion?: string;
+          }> | null = await res.json();
+          const mapped = (data || []).map((d) => ({
             id: d.id,
             username: d.userId,
             text: d.descripcion || d.titulo || '',
@@ -103,7 +114,9 @@ export default function VideoPage() {
       await loadComments(vid);
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [videoKey, video?.videoId]);
 
   // Likes / watch later / playlists state
@@ -117,8 +130,6 @@ export default function VideoPage() {
   const actionsRef = useRef<HTMLDivElement | null>(null);
   const addButtonRef = useRef<HTMLButtonElement | null>(null);
   const [popoverPos, setPopoverPos] = useState<{ left: number; top: number } | null>(null);
-
-  
 
   const userId = localStorage.getItem('protube_user_id') || localStorage.getItem('protube_user');
   const targetVideoId = backendVideoId || videoKey;
@@ -137,13 +148,13 @@ export default function VideoPage() {
     // Backend Playlists & Watch Later
     if (userId) {
       fetch(`/api/playlists/user/${userId}/watch-later`)
-        .then(r => r.ok ? r.json() : null)
-        .then(data => setWatchLaterPlaylist(data))
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => setWatchLaterPlaylist(data))
         .catch(() => {});
 
       fetch(`/api/playlists/user/${userId}`)
-        .then(r => r.ok ? r.json() : [])
-        .then(data => setPlaylists(data.filter((p: any) => p.name !== 'Watch Later')))
+        .then((r) => (r.ok ? r.json() : []))
+        .then((data) => setPlaylists(data.filter((p: any) => p.name !== 'Watch Later')))
         .catch(() => {});
     }
   }, [videoKey, userId, backendVideoId]);
@@ -173,7 +184,9 @@ export default function VideoPage() {
       }
     };
     check();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [userId, targetVideoId]);
 
   const toggleLiked = async () => {
@@ -221,7 +234,7 @@ export default function VideoPage() {
       showToast('Inicia sessió per utilitzar aquesta funció');
       return;
     }
-    
+
     let playlist = watchLaterPlaylist;
     if (!playlist) {
       try {
@@ -306,7 +319,7 @@ export default function VideoPage() {
       const createRes = await fetch(`/api/playlists/user/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: name
+        body: name,
       });
       if (createRes.ok) {
         const newPlaylist = await createRes.json();
@@ -344,8 +357,6 @@ export default function VideoPage() {
     return () => document.removeEventListener('keydown', onKey);
   }, [showPlaylistPopover]);
 
-  
-
   // Save to history when the page mounts (viewedAt = now). Keep newest first and dedupe by name
   const postedRef = useRef(false);
   useEffect(() => {
@@ -355,8 +366,17 @@ export default function VideoPage() {
     // Local fallback history (dedupe by name)
     try {
       const raw = localStorage.getItem('protube_history') || '[]';
-      const arr = JSON.parse(raw) as Array<{ name: string; title?: string; posterUrl?: string; videoUrl?: string; viewedAt: number }>;
-      const next = [{ name: videoKey, title, posterUrl, videoUrl, viewedAt }, ...(arr.filter(a => a.name !== videoKey))];
+      const arr = JSON.parse(raw) as Array<{
+        name: string;
+        title?: string;
+        posterUrl?: string;
+        videoUrl?: string;
+        viewedAt: number;
+      }>;
+      const next = [
+        { name: videoKey, title, posterUrl, videoUrl, viewedAt },
+        ...arr.filter((a) => a.name !== videoKey),
+      ];
       localStorage.setItem('protube_history', JSON.stringify(next.slice(0, 200)));
     } catch {}
     // Backend registration
@@ -366,7 +386,7 @@ export default function VideoPage() {
         fetch('/api/history/view', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: uid, videoFileName: videoKey })
+          body: JSON.stringify({ userId: uid, videoFileName: videoKey }),
         }).catch(() => {});
       }
     } catch {}
@@ -411,15 +431,28 @@ export default function VideoPage() {
 
         if (resp.ok) {
           showToast('Comentari guardat');
-          try { window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'comentari', videoKey } })); } catch {}
+          try {
+            window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'comentari', videoKey } }));
+          } catch {}
           // Refresh comments from backend to reflect persisted state
           try {
             const vid = resolvedVideoId || backendVideoId;
             if (vid) {
               const res2 = await fetch(`${API}/comentaris/video/${encodeURIComponent(vid)}`);
               if (res2.ok) {
-                const data: Array<{ id: string; userId: string; videoId: string; titulo?: string; descripcion?: string }>|null = await res2.json();
-                const mapped = (data || []).map(d => ({ id: d.id, username: d.userId, text: d.descripcion || d.titulo || '', createdAt: Date.now() }));
+                const data: Array<{
+                  id: string;
+                  userId: string;
+                  videoId: string;
+                  titulo?: string;
+                  descripcion?: string;
+                }> | null = await res2.json();
+                const mapped = (data || []).map((d) => ({
+                  id: d.id,
+                  username: d.userId,
+                  text: d.descripcion || d.titulo || '',
+                  createdAt: Date.now(),
+                }));
                 setComments(mapped);
               }
             }
@@ -428,7 +461,8 @@ export default function VideoPage() {
           let msg = "No s'ha pogut desar el comentari al servidor";
           try {
             const headerMsg = resp.headers.get('X-Error');
-            if (headerMsg) msg = headerMsg; else {
+            if (headerMsg) msg = headerMsg;
+            else {
               const txt = await resp.text();
               if (txt) msg = txt;
             }
@@ -446,7 +480,9 @@ export default function VideoPage() {
   return (
     <div className="video-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link to="/" className="back-link">← Volver</Link>
+        <Link to="/" className="back-link">
+          ← Volver
+        </Link>
       </div>
 
       <div>
@@ -457,7 +493,19 @@ export default function VideoPage() {
           </video>
         </div>
 
-        <div ref={actionsRef} style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', width: '100%', position: 'relative' }} className="video-actions">
+        <div
+          ref={actionsRef}
+          style={{
+            marginTop: 12,
+            display: 'flex',
+            gap: 8,
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            width: '100%',
+            position: 'relative',
+          }}
+          className="video-actions"
+        >
           <button
             className={`action-btn ${liked ? 'active' : ''}`}
             onClick={toggleLiked}
@@ -487,62 +535,68 @@ export default function VideoPage() {
         </div>
 
         <div style={{ marginTop: 12 }}>
-          <h1 className="video-title" style={{ margin: '0 0 8px 0' }}>{title}</h1>
+          <h1 className="video-title" style={{ margin: '0 0 8px 0' }}>
+            {title}
+          </h1>
           {description ? <p className="video-description">{description}</p> : null}
         </div>
 
         {showPlaylistPopover && (
           <>
-          <div
-            onClick={() => { setShowPlaylistPopover(false); }}
-            aria-hidden
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.25)', zIndex: 1100 }}
-          />
-          <div
-            className="playlist-popover"
-            role="dialog"
-            aria-label="Selecciona o crea una playlist"
-            style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 1200,
-              minWidth: 260,
-              maxWidth: 320,
-              width: 'auto',
-              background: '#fff',
-              borderRadius: 8,
-              padding: 8,
-              boxShadow: '0 6px 18px rgba(0,0,0,0.12)'
-            }}
-          >
-            <h4>Selecciona una playlist</h4>
-            {playlists.length === 0 ? (
-              <div style={{ color: '#6b7280', marginBottom: 8 }}>No hi ha llistes encara.</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {playlists.map(playlist => (
-                  <div key={playlist.id} className="playlist-item" onClick={() => addToExistingPlaylist(playlist)}>
-                    <span>{playlist.name}</span>
-                    <small style={{ color: '#6b7280' }}>{playlist.videoIds.length} vídeos</small>
-                  </div>
-                ))}
+            <div
+              onClick={() => {
+                setShowPlaylistPopover(false);
+              }}
+              aria-hidden
+              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.25)', zIndex: 1100 }}
+            />
+            <div
+              className="playlist-popover"
+              role="dialog"
+              aria-label="Selecciona o crea una playlist"
+              style={{
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                zIndex: 1200,
+                minWidth: 260,
+                maxWidth: 320,
+                width: 'auto',
+                background: '#fff',
+                borderRadius: 8,
+                padding: 8,
+                boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
+              }}
+            >
+              <h4>Selecciona una playlist</h4>
+              {playlists.length === 0 ? (
+                <div style={{ color: '#6b7280', marginBottom: 8 }}>No hi ha llistes encara.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {playlists.map((playlist) => (
+                    <div key={playlist.id} className="playlist-item" onClick={() => addToExistingPlaylist(playlist)}>
+                      <span>{playlist.name}</span>
+                      <small style={{ color: '#6b7280' }}>{playlist.videoIds.length} vídeos</small>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ height: 1, background: '#eef2f7', margin: '8px 0' }} />
+
+              <div className="playlist-create">
+                <input
+                  aria-label="Nom nova playlist"
+                  value={newPlaylistName}
+                  onChange={(e) => setNewPlaylistName(e.target.value)}
+                  placeholder="Nou nom de playlist"
+                />
+                <button className="action-btn" onClick={() => createAndAddPlaylist(newPlaylistName)}>
+                  Crear
+                </button>
               </div>
-            )}
-
-            <div style={{ height: 1, background: '#eef2f7', margin: '8px 0' }} />
-
-            <div className="playlist-create">
-              <input
-                aria-label="Nom nova playlist"
-                value={newPlaylistName}
-                onChange={e => setNewPlaylistName(e.target.value)}
-                placeholder="Nou nom de playlist"
-              />
-              <button className="action-btn" onClick={() => createAndAddPlaylist(newPlaylistName)}>Crear</button>
             </div>
-          </div>
           </>
         )}
       </div>
@@ -554,12 +608,14 @@ export default function VideoPage() {
             <textarea
               aria-label="Escribe un comentario"
               value={commentText}
-              onChange={e => setCommentText(e.target.value)}
+              onChange={(e) => setCommentText(e.target.value)}
               rows={3}
               placeholder="Escribe tu comentario..."
             />
             <div style={{ marginTop: 8 }}>
-              <button type="submit" className="btn-primary">Enviar</button>
+              <button type="submit" className="btn-primary">
+                Enviar
+              </button>
             </div>
           </form>
         ) : (
@@ -570,9 +626,11 @@ export default function VideoPage() {
           {comments.length === 0 ? (
             <p style={{ color: '#6b7280' }}>Sin comentarios todavía.</p>
           ) : (
-            comments.map(c => (
+            comments.map((c) => (
               <div className="comment" key={c.id}>
-                <div className="comment-meta">{c.username || 'Usuario'} • {new Date(c.createdAt).toLocaleString()}</div>
+                <div className="comment-meta">
+                  {c.username || 'Usuario'} • {new Date(c.createdAt).toLocaleString()}
+                </div>
                 <div className="comment-text">{c.text}</div>
               </div>
             ))

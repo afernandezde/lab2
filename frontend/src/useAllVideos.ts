@@ -56,15 +56,17 @@ export function useAllVideos() {
               const name = base; // display name without extension
 
               // Compute videoUrl (absolute URLs are kept; otherwise use backend media handler)
-              const videoUrl = (rawStr.startsWith('http://') || rawStr.startsWith('https://'))
-                ? rawStr
-                : `${MEDIA_BASE_URL}/${filename}`;
+              const videoUrl =
+                rawStr.startsWith('http://') || rawStr.startsWith('https://')
+                  ? rawStr
+                  : `${MEDIA_BASE_URL}/${filename}`;
 
               // Poster: backend stores posters as <base>.webp (e.g. '1.webp')
               const posterFilename = `${base}.webp`;
-              const posterUrl = (posterFilename.startsWith('http://') || posterFilename.startsWith('https://'))
-                ? posterFilename
-                : `${MEDIA_BASE_URL}/${posterFilename}`;
+              const posterUrl =
+                posterFilename.startsWith('http://') || posterFilename.startsWith('https://')
+                  ? posterFilename
+                  : `${MEDIA_BASE_URL}/${posterFilename}`;
 
               // Try to fetch metadata JSON at <base>.json but prefer title/description from backend object
               let title: string | undefined = titleFromObj;
@@ -76,10 +78,7 @@ export function useAllVideos() {
 
               if (!title || !description || viewCount == null || likeCount == null || durationSeconds == null) {
                 // Try multiple candidate metadata paths to be resilient against naming differences.
-                const candidateMetaPaths = [
-                  `${MEDIA_BASE_URL}/${base}.json`,
-                  `${MEDIA_BASE_URL}/${filename}.json`,
-                ];
+                const candidateMetaPaths = [`${MEDIA_BASE_URL}/${base}.json`, `${MEDIA_BASE_URL}/${filename}.json`];
                 if (videoIdFromObj) candidateMetaPaths.push(`${MEDIA_BASE_URL}/${videoIdFromObj}.json`);
 
                 let gotMeta = false;
@@ -93,18 +92,40 @@ export function useAllVideos() {
                       // Title can be at root; description usually inside meta
                       title = title ?? (data.title || meta.title);
                       description = description ?? (data.description || meta.description);
-                      channel = channel ?? (data.channel || meta.channel || data.user || data.author || meta.author || data.uploader);
-                      const vcRaw = meta.view_count ?? data.view_count ?? meta.views ?? data.views ?? data.viewCount ?? meta.viewCount;
+                      channel =
+                        channel ??
+                        (data.channel || meta.channel || data.user || data.author || meta.author || data.uploader);
+                      const vcRaw =
+                        meta.view_count ??
+                        data.view_count ??
+                        meta.views ??
+                        data.views ??
+                        data.viewCount ??
+                        meta.viewCount;
                       if (vcRaw != null) {
                         const num = Number(vcRaw);
                         if (!Number.isNaN(num) && num >= 0) viewCount = num;
                       }
-                      const lcRaw = meta.like_count ?? data.like_count ?? meta.likes ?? data.likes ?? data.likeCount ?? meta.likeCount;
+                      const lcRaw =
+                        meta.like_count ??
+                        data.like_count ??
+                        meta.likes ??
+                        data.likes ??
+                        data.likeCount ??
+                        meta.likeCount;
                       if (lcRaw != null) {
                         const num = Number(lcRaw);
                         if (!Number.isNaN(num) && num >= 0) likeCount = num;
                       }
-                      const durRaw = data.duration ?? meta.duration ?? data.length_seconds ?? meta.length_seconds ?? data.length ?? meta.length ?? data.durationSeconds ?? meta.durationSeconds;
+                      const durRaw =
+                        data.duration ??
+                        meta.duration ??
+                        data.length_seconds ??
+                        meta.length_seconds ??
+                        data.length ??
+                        meta.length ??
+                        data.durationSeconds ??
+                        meta.durationSeconds;
                       if (durRaw != null) {
                         const num = Number(durRaw);
                         if (!Number.isNaN(num) && num >= 0) durationSeconds = num;
@@ -123,18 +144,30 @@ export function useAllVideos() {
                   const meta = data.meta || {};
                   title = title ?? (data.title || meta.title);
                   description = description ?? (data.description || meta.description);
-                  channel = channel ?? (data.channel || meta.channel || data.user || data.author || meta.author || data.uploader);
-                  const vcRaw = meta.view_count ?? data.view_count ?? meta.views ?? data.views ?? data.viewCount ?? meta.viewCount;
+                  channel =
+                    channel ??
+                    (data.channel || meta.channel || data.user || data.author || meta.author || data.uploader);
+                  const vcRaw =
+                    meta.view_count ?? data.view_count ?? meta.views ?? data.views ?? data.viewCount ?? meta.viewCount;
                   if (vcRaw != null) {
                     const num = Number(vcRaw);
                     if (!Number.isNaN(num) && num >= 0) viewCount = num;
                   }
-                  const lcRaw = meta.like_count ?? data.like_count ?? meta.likes ?? data.likes ?? data.likeCount ?? meta.likeCount;
+                  const lcRaw =
+                    meta.like_count ?? data.like_count ?? meta.likes ?? data.likes ?? data.likeCount ?? meta.likeCount;
                   if (lcRaw != null) {
                     const num = Number(lcRaw);
                     if (!Number.isNaN(num) && num >= 0) likeCount = num;
                   }
-                  const durRaw = data.duration ?? meta.duration ?? data.length_seconds ?? meta.length_seconds ?? data.length ?? meta.length ?? data.durationSeconds ?? meta.durationSeconds;
+                  const durRaw =
+                    data.duration ??
+                    meta.duration ??
+                    data.length_seconds ??
+                    meta.length_seconds ??
+                    data.length ??
+                    meta.length ??
+                    data.durationSeconds ??
+                    meta.durationSeconds;
                   if (durRaw != null) {
                     const num = Number(durRaw);
                     if (!Number.isNaN(num) && num >= 0) durationSeconds = num;
@@ -142,7 +175,18 @@ export function useAllVideos() {
                 }
               }
 
-              return { name, videoUrl, posterUrl, title, description, channel, viewCount, likeCount, durationSeconds, videoId: videoIdFromObj };
+              return {
+                name,
+                videoUrl,
+                posterUrl,
+                title,
+                description,
+                channel,
+                viewCount,
+                likeCount,
+                durationSeconds,
+                videoId: videoIdFromObj,
+              };
             })
           );
           setValue(mapped);

@@ -32,7 +32,9 @@ const Liked: React.FC = () => {
       if (!cancelled) setLiked([]);
     };
     load();
-    const onUpdate = (e: Event) => { load(); };
+    const onUpdate = (e: Event) => {
+      load();
+    };
     window.addEventListener('protube:update', onUpdate as EventListener);
     return () => {
       cancelled = true;
@@ -40,12 +42,12 @@ const Liked: React.FC = () => {
     };
   }, []);
 
-  const items = liked.map(id => {
+  const items = liked.map((id) => {
     // Backend returns videoId strings; try to resolve to a VideoItem by videoId first,
     // then fall back to matching by name, and finally show the id as a title fallback.
-    const byId = videos.find(v => v.videoId === id);
+    const byId = videos.find((v) => v.videoId === id);
     if (byId) return byId;
-    const byName = videos.find(v => v.name === id);
+    const byName = videos.find((v) => v.name === id);
     if (byName) return byName;
     return { name: id, title: id, posterUrl: '' } as any;
   });
@@ -59,15 +61,33 @@ const Liked: React.FC = () => {
         <p style={{ color: '#6b7280' }}>No hi ha vídeos marcats com a m'agrada.</p>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 12 }}>
-          {items.map(v => (
-            <li key={v.videoId ?? v.name} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: 8, borderRadius: 8, background: '#fff' }}>
+          {items.map((v) => (
+            <li
+              key={v.videoId ?? v.name}
+              style={{
+                display: 'flex',
+                gap: 12,
+                alignItems: 'center',
+                padding: 8,
+                borderRadius: 8,
+                background: '#fff',
+              }}
+            >
               {v.posterUrl ? (
-                <img src={v.posterUrl} alt={v.title ?? v.name} style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 8 }} />
+                <img
+                  src={v.posterUrl}
+                  alt={v.title ?? v.name}
+                  style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 8 }}
+                />
               ) : (
                 <div style={{ width: 120, height: 68, background: '#000', borderRadius: 8 }} />
               )}
               <div style={{ flex: 1, textAlign: 'left' }}>
-                <Link to={`/video/${encodeURIComponent(v.name ?? v.videoId ?? '')}`} state={{ video: v }} style={{ fontWeight: 700, color: '#111827', textDecoration: 'none' }}>
+                <Link
+                  to={`/video/${encodeURIComponent(v.name ?? v.videoId ?? '')}`}
+                  state={{ video: v }}
+                  style={{ fontWeight: 700, color: '#111827', textDecoration: 'none' }}
+                >
                   {v.title ?? v.name ?? v.videoId}
                 </Link>
               </div>

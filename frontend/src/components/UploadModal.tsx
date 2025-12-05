@@ -26,7 +26,13 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
   useEffect(() => {
     // Revoke created object URLs when the page unloads to avoid leaking
     const handler = () => {
-      try { createdUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch (e) {} }); } catch (e) {}
+      try {
+        createdUrls.forEach((u) => {
+          try {
+            URL.revokeObjectURL(u);
+          } catch (e) {}
+        });
+      } catch (e) {}
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
@@ -37,7 +43,16 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
     const list: UploadItem[] = [];
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
-      list.push({ file: f, title: f.name, description: '', posterUrl: '', playlist: null, visibility: 'private', progress: 0, published: false });
+      list.push({
+        file: f,
+        title: f.name,
+        description: '',
+        posterUrl: '',
+        playlist: null,
+        visibility: 'private',
+        progress: 0,
+        published: false,
+      });
     }
     setItems(list);
     // create preview URLs for each file and store mapping in sessionStorage
@@ -46,7 +61,9 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
       try {
         const u = URL.createObjectURL(it.file);
         urls.push(u);
-        try { sessionStorage.setItem('protube_blob_' + it.file.name, u); } catch (e) {}
+        try {
+          sessionStorage.setItem('protube_blob_' + it.file.name, u);
+        } catch (e) {}
       } catch (e) {}
     }
     setCreatedUrls(urls);
@@ -57,7 +74,7 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
   const handleThumbnail = (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
     const f = fileList[0];
-    setItems(prev => prev.length ? [{ ...prev[0], thumbnailFile: f }] : prev);
+    setItems((prev) => (prev.length ? [{ ...prev[0], thumbnailFile: f }] : prev));
   };
 
   // Upload to backend API using multipart/form-data with DTO in "meta" plus optional "thumbnail"
@@ -65,32 +82,40 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
     try {
       const userId = localStorage.getItem('protube_username') || localStorage.getItem('protube_user_id') || 'unknown';
 
-      const results = await Promise.all(items.map(async (it) => {
-        const meta = {
-          userId,
-          title: it.title || it.file.name,
-          description: it.description || '',
-          fileName: it.file.name
-        };
-        const form = new FormData();
-        form.append('file', it.file);
-        if (it.thumbnailFile) {
-          form.append('thumbnail', it.thumbnailFile);
-        }
-        form.append('meta', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
-        form.append('published', String(publish));
+      const results = await Promise.all(
+        items.map(async (it) => {
+          const meta = {
+            userId,
+            title: it.title || it.file.name,
+            description: it.description || '',
+            fileName: it.file.name,
+          };
+          const form = new FormData();
+          form.append('file', it.file);
+          if (it.thumbnailFile) {
+            form.append('thumbnail', it.thumbnailFile);
+          }
+          form.append('meta', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+          form.append('published', String(publish));
 
-        const res = await fetch('/api/videos/upload', { method: 'POST', body: form });
-        return res.ok;
-      }));
+          const res = await fetch('/api/videos/upload', { method: 'POST', body: form });
+          return res.ok;
+        })
+      );
 
       const allOk = results.every(Boolean);
       try {
         window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'channel_upload' } }));
-        window.dispatchEvent(new CustomEvent('protube:toast', { detail: { message: allOk ? (publish ? 'Vídeos publicats' : 'Vídeos desats') : 'Alguns errors en pujar' } }));
+        window.dispatchEvent(
+          new CustomEvent('protube:toast', {
+            detail: { message: allOk ? (publish ? 'Vídeos publicats' : 'Vídeos desats') : 'Alguns errors en pujar' },
+          })
+        );
       } catch (e) {}
     } catch (e) {
-      try { window.alert('Error uploading the videos'); } catch {}
+      try {
+        window.alert('Error uploading the videos');
+      } catch {}
     } finally {
       onClose();
     }
@@ -102,7 +127,9 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
         <div className="upload-modal">
           <div className="upload-header">
             <h3>Penja vídeos</h3>
-            <button className="ghost" onClick={onClose} aria-label="Tancar">✕</button>
+            <button className="ghost" onClick={onClose} aria-label="Tancar">
+              ✕
+            </button>
           </div>
 
           <div className="upload-body">
@@ -113,7 +140,13 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
 
               <label className="upload-choose">
                 Selecciona els fitxers
-                <input type="file" accept="video/*" multiple style={{ display: 'none' }} onChange={e => handleFiles(e.target.files)} />
+                <input
+                  type="file"
+                  accept="video/*"
+                  multiple
+                  style={{ display: 'none' }}
+                  onChange={(e) => handleFiles(e.target.files)}
+                />
               </label>
             </div>
           </div>
@@ -127,7 +160,11 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
   const cur = items[0];
   // playlists list available
   const playlists = (() => {
-    try { return Object.keys(JSON.parse(localStorage.getItem('protube_playlists') || '{}')); } catch (e) { return []; }
+    try {
+      return Object.keys(JSON.parse(localStorage.getItem('protube_playlists') || '{}'));
+    } catch (e) {
+      return [];
+    }
   })();
 
   return (
@@ -135,25 +172,46 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
       <div className="upload-modal" style={{ width: 900, maxWidth: 'calc(100% - 40px)' }}>
         <div className="upload-header">
           <h3>Penja vídeos</h3>
-          <button className="ghost" onClick={onClose} aria-label="Tancar">✕</button>
+          <button className="ghost" onClick={onClose} aria-label="Tancar">
+            ✕
+          </button>
         </div>
 
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1, padding: 18 }}>
             <label style={{ display: 'block', marginBottom: 6 }}>Títol (obligatori)</label>
-            <input value={cur.title} onChange={e => setItems(prev => [{ ...prev[0], title: e.target.value }])} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #e6e6e6' }} />
+            <input
+              value={cur.title}
+              onChange={(e) => setItems((prev) => [{ ...prev[0], title: e.target.value }])}
+              style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #e6e6e6' }}
+            />
             <label style={{ display: 'block', marginTop: 12, marginBottom: 6 }}>Descripció</label>
-            <textarea value={cur.description} onChange={e => setItems(prev => [{ ...prev[0], description: e.target.value }])} style={{ width: '100%', minHeight: 160, padding: 10, borderRadius: 8, border: '1px solid #e6e6e6' }} />
+            <textarea
+              value={cur.description}
+              onChange={(e) => setItems((prev) => [{ ...prev[0], description: e.target.value }])}
+              style={{ width: '100%', minHeight: 160, padding: 10, borderRadius: 8, border: '1px solid #e6e6e6' }}
+            />
             <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-                <button className="action-btn" onClick={() => saveAll(true)}>Publica</button>
+                <button className="action-btn" onClick={() => saveAll(true)}>
+                  Publica
+                </button>
               </div>
             </div>
           </div>
 
           <aside style={{ width: 360, padding: 18, borderLeft: '1px solid #eef2f7', background: '#fafafa' }}>
             <div style={{ marginBottom: 8 }}>
-              <div style={{ background: '#000', height: 200, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div
+                style={{
+                  background: '#000',
+                  height: 200,
+                  borderRadius: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 {previewUrl ? (
                   <video src={previewUrl} controls style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 8 }} />
                 ) : (
@@ -165,8 +223,16 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
             <div style={{ fontWeight: 700 }}>{cur.file.name}</div>
             <div style={{ marginTop: 16 }}>
               <label style={{ display: 'block', marginBottom: 6 }}>Miniatura (opcional)</label>
-              <input type="file" accept="image/*" onChange={e => handleThumbnail(e.target.files)} />
-              {cur.thumbnailFile ? <div style={{ fontSize: 12, color: '#4b5563', marginTop: 4 }}>Seleccionada: {cur.thumbnailFile.name}</div> : <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>Si no n'afegeixes, se generarà automàticament.</div>}
+              <input type="file" accept="image/*" onChange={(e) => handleThumbnail(e.target.files)} />
+              {cur.thumbnailFile ? (
+                <div style={{ fontSize: 12, color: '#4b5563', marginTop: 4 }}>
+                  Seleccionada: {cur.thumbnailFile.name}
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
+                  Si no n'afegeixes, se generarà automàticament.
+                </div>
+              )}
             </div>
           </aside>
         </div>

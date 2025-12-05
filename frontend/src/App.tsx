@@ -47,38 +47,38 @@ function App() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const fetchAvatar = useCallback(async (user: string) => {
-      try {
-          // First resolve username if it's an email
-          let finalUsername = user;
-          if (user.includes('@')) {
-              const res = await fetch(`/api/users/username?email=${encodeURIComponent(user)}`);
-              if (res.ok) finalUsername = await res.text();
-          }
-          
-          const res = await fetch(`/api/users/${finalUsername}`);
-          if (res.ok) {
-              const data = await res.json();
-              setAvatarUrl(data.avatar || null);
-          }
-      } catch (e) {
-          console.error("Failed to fetch avatar", e);
+    try {
+      // First resolve username if it's an email
+      let finalUsername = user;
+      if (user.includes('@')) {
+        const res = await fetch(`/api/users/username?email=${encodeURIComponent(user)}`);
+        if (res.ok) finalUsername = await res.text();
       }
+
+      const res = await fetch(`/api/users/${finalUsername}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAvatarUrl(data.avatar || null);
+      }
+    } catch (e) {
+      console.error('Failed to fetch avatar', e);
+    }
   }, []);
 
   useEffect(() => {
-      if (username) {
-          fetchAvatar(username);
-      } else {
-          setAvatarUrl(null);
-      }
+    if (username) {
+      fetchAvatar(username);
+    } else {
+      setAvatarUrl(null);
+    }
   }, [username, fetchAvatar]);
 
   useEffect(() => {
-      const onProfileUpdate = () => {
-          if (username) fetchAvatar(username);
-      };
-      window.addEventListener('protube:profile-update', onProfileUpdate);
-      return () => window.removeEventListener('protube:profile-update', onProfileUpdate);
+    const onProfileUpdate = () => {
+      if (username) fetchAvatar(username);
+    };
+    window.addEventListener('protube:profile-update', onProfileUpdate);
+    return () => window.removeEventListener('protube:profile-update', onProfileUpdate);
   }, [username, fetchAvatar]);
 
   // Global toast listener so any page can fire a non-blocking message
@@ -136,7 +136,9 @@ function App() {
       localStorage.removeItem('protube_user_id');
       localStorage.removeItem('protube_username');
       // notify other components in the same tab to refresh auth-dependent state
-      try { window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'auth', loggedIn: false } })); } catch (e) {}
+      try {
+        window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'auth', loggedIn: false } }));
+      } catch (e) {}
     } catch (e) {}
   };
 
@@ -159,7 +161,9 @@ function App() {
                   localStorage.setItem('protube_user', name);
                 } catch (e) {}
               }
-              try { window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'auth', loggedIn: true } })); } catch (e) {}
+              try {
+                window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'auth', loggedIn: true } }));
+              } catch (e) {}
             }}
           />
         )}
@@ -171,24 +175,45 @@ function App() {
             </Link>
           </div>
           <div className="header-right">
-                <div className="create-wrapper" ref={createRef}>
+            <div className="create-wrapper" ref={createRef}>
+              <button
+                className="create-button"
+                onClick={() => setCreateOpen((v) => !v)}
+                aria-haspopup="true"
+                aria-expanded={createOpen}
+                aria-label="Crear"
+              >
+                <span className="create-plus">+</span>
+                <span className="create-text">Crea</span>
+              </button>
+              {createOpen && (
+                <div className="create-menu" role="menu" aria-label="Crear">
                   <button
-                    className="create-button"
-                    onClick={() => setCreateOpen(v => !v)}
-                    aria-haspopup="true"
-                    aria-expanded={createOpen}
-                    aria-label="Crear"
+                    className="create-menu-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setCreateOpen(false);
+                      try {
+                        window.dispatchEvent(new CustomEvent('protube:open-upload'));
+                      } catch (e) {}
+                    }}
                   >
-                    <span className="create-plus">+</span>
-                    <span className="create-text">Crea</span>
+                    Penja un vídeo
                   </button>
-                  {createOpen && (
-                    <div className="create-menu" role="menu" aria-label="Crear">
-                      <button className="create-menu-item" role="menuitem" onClick={() => { setCreateOpen(false); try { window.dispatchEvent(new CustomEvent('protube:open-upload')); } catch (e) {} }}>Penja un vídeo</button>
-                      <button className="create-menu-item" role="menuitem" onClick={() => { setCreateOpen(false); window.location.hash = '#post'; window.location.pathname = '/profile'; }}>Crea una publicació</button>
-                    </div>
-                  )}
+                  <button
+                    className="create-menu-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setCreateOpen(false);
+                      window.location.hash = '#post';
+                      window.location.pathname = '/profile';
+                    }}
+                  >
+                    Crea una publicació
+                  </button>
                 </div>
+              )}
+            </div>
             {!isAuthenticated ? (
               <>
                 <button
@@ -204,12 +229,16 @@ function App() {
               <div className="user-info" ref={userMenuRef}>
                 <button
                   className="user-toggle"
-                  onClick={() => setUserMenuOpen(v => !v)}
+                  onClick={() => setUserMenuOpen((v) => !v)}
                   aria-haspopup="true"
                   aria-expanded={userMenuOpen}
                 >
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt="avatar" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', marginRight: 8 }} />
+                    <img
+                      src={avatarUrl}
+                      alt="avatar"
+                      style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', marginRight: 8 }}
+                    />
                   ) : (
                     <CircleUser size={28} color="white" strokeWidth={0.8} />
                   )}
@@ -255,9 +284,13 @@ function App() {
           </Routes>
         </main>
 
-  {/* footer moved into the sidebar */}
-  {toast && <div className="toast" role="status">{toast}</div>}
-  {uploadOpen && <UploadModal onClose={() => setUploadOpen(false)} />}
+        {/* footer moved into the sidebar */}
+        {toast && (
+          <div className="toast" role="status">
+            {toast}
+          </div>
+        )}
+        {uploadOpen && <UploadModal onClose={() => setUploadOpen(false)} />}
         {/* Registration is available from inside the LoginModal via the "Sign up" link. */}
       </div>
     </BrowserRouter>

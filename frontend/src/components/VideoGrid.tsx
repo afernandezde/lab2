@@ -17,9 +17,8 @@ const VideoGrid = ({ videos }: VideoGridProps) => {
   return (
     <div className="video-grid">
       {videos.map((v) => {
-        const displayTitle = (v.title && v.title.trim().length > 0)
-          ? v.title
-          : v.name.split('.').slice(0, -1).join('.').replace(/_/g, ' ');
+        const displayTitle =
+          v.title && v.title.trim().length > 0 ? v.title : v.name.split('.').slice(0, -1).join('.').replace(/_/g, ' ');
         const durationLabel = formatDuration(v.durationSeconds);
         return (
           <div key={v.name} className="video-item" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -33,7 +32,13 @@ const VideoGrid = ({ videos }: VideoGridProps) => {
                 <img
                   src={v.posterUrl}
                   alt={displayTitle}
-                  style={{ width: '100%', display: 'block', objectFit: 'cover', aspectRatio: '16/9', background: '#000' }}
+                  style={{
+                    width: '100%',
+                    display: 'block',
+                    objectFit: 'cover',
+                    aspectRatio: '16/9',
+                    background: '#000',
+                  }}
                 />
                 {durationLabel && (
                   <div
@@ -56,9 +61,7 @@ const VideoGrid = ({ videos }: VideoGridProps) => {
                 )}
               </div>
               <div style={{ marginTop: 8 }}>
-                <p style={{ margin: 0, fontWeight: 600, lineHeight: 1.3, fontSize: 14 }}>
-                  {displayTitle}
-                </p>
+                <p style={{ margin: 0, fontWeight: 600, lineHeight: 1.3, fontSize: 14 }}>{displayTitle}</p>
                 <div style={{ marginTop: 4, color: '#6b7280', fontSize: 12 }}>
                   {(() => {
                     const viewsLabel = `${Intl.NumberFormat(undefined, { notation: 'compact' }).format(v.viewCount ?? 0)} visualizaciones`;

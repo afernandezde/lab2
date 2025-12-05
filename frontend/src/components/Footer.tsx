@@ -83,19 +83,37 @@ const Footer: React.FC = () => {
         </div>
 
         <nav className="pt-footer__nav" aria-label="Footer">
-          <a href="/" className="pt-footer__link">Home</a>
-          <a href="/about" className="pt-footer__link">About</a>
-          <a href="/contact" className="pt-footer__link">Contact</a>
+          <a href="/" className="pt-footer__link">
+            Home
+          </a>
+          <a href="/about" className="pt-footer__link">
+            About
+          </a>
+          <a href="/contact" className="pt-footer__link">
+            Contact
+          </a>
         </nav>
 
         <div className="pt-footer__social" aria-hidden="false">
-          <a href="https://github.com/afernandezde/lab2" target="_blank" rel="noopener noreferrer" className="pt-footer__icon" aria-label="GitHub">
+          <a
+            href="https://github.com/afernandezde/lab2"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pt-footer__icon"
+            aria-label="GitHub"
+          >
             <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
               <path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2 .37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.01.08-2.1 0 0 .67-.21 2.2.82a7.6 7.6 0 012.01-.27c.68 0 1.36.09 2.01.27 1.53-1.04 2.2-.82 2.2-.82.44 1.09.16 1.9.08 2.1.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path>
             </svg>
           </a>
 
-          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="pt-footer__icon" aria-label="Twitter">
+          <a
+            href="https://twitter.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pt-footer__icon"
+            aria-label="Twitter"
+          >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M22.46 6c-.77.35-1.6.58-2.46.69a4.27 4.27 0 001.88-2.36 8.5 8.5 0 01-2.7 1.03 4.25 4.25 0 00-7.24 3.88A12.07 12.07 0 013 4.79a4.25 4.25 0 001.32 5.67 4.2 4.2 0 01-1.92-.53v.05a4.25 4.25 0 003.41 4.17c-.48.13-.98.2-1.5.08a4.27 4.27 0 003.98 2.96A8.53 8.53 0 012 19.54a12.05 12.05 0 006.53 1.92c7.84 0 12.13-6.5 12.13-12.13l-.01-.55A8.6 8.6 0 0024 5.1a8.35 8.35 0 01-2.4.66z"></path>
             </svg>

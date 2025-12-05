@@ -2,15 +2,75 @@
 
 exports[`this component renders correctly 1`] = `
 <DocumentFragment>
-  <ul
-    class="row g-4"
+  <div
+    class="video-grid"
   >
-    <li>
-      video 1 test
-    </li>
-    <li>
-      video 2 test
-    </li>
-  </ul>
+    <div
+      class="video-item"
+      style="display: flex; flex-direction: column;"
+    >
+      <a
+        href="/video/video1.mp4"
+        style="text-decoration: none; color: inherit;"
+      >
+        <div
+          style="position: relative; border-radius: 8px; overflow: hidden;"
+        >
+          <img
+            alt="Video One"
+            src="/poster1.png"
+            style="width: 100%; display: block; object-fit: cover; aspect-ratio: 16/9; background: rgb(0, 0, 0);"
+          />
+        </div>
+        <div
+          style="margin-top: 8px;"
+        >
+          <p
+            style="margin: 0px; font-weight: 600; line-height: 1.3; font-size: 14px;"
+          >
+            Video One
+          </p>
+          <div
+            style="margin-top: 4px; color: rgb(107, 114, 128); font-size: 12px;"
+          >
+            0 visualizaciones • ❤ 0
+          </div>
+        </div>
+      </a>
+    </div>
+    <div
+      class="video-item"
+      style="display: flex; flex-direction: column;"
+    >
+      <a
+        href="/video/video2.mp4"
+        style="text-decoration: none; color: inherit;"
+      >
+        <div
+          style="position: relative; border-radius: 8px; overflow: hidden;"
+        >
+          <img
+            alt="Video Two"
+            src="/poster2.png"
+            style="width: 100%; display: block; object-fit: cover; aspect-ratio: 16/9; background: rgb(0, 0, 0);"
+          />
+        </div>
+        <div
+          style="margin-top: 8px;"
+        >
+          <p
+            style="margin: 0px; font-weight: 600; line-height: 1.3; font-size: 14px;"
+          >
+            Video Two
+          </p>
+          <div
+            style="margin-top: 4px; color: rgb(107, 114, 128); font-size: 12px;"
+          >
+            0 visualizaciones • ❤ 0
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
 </DocumentFragment>
 `;

@@ -28,16 +28,24 @@ public class MvcConfig implements WebMvcConfigurer {
     }
 
     @Override
-    public void addCorsMappings(@NonNull CorsRegistry registry) {
+        public void addCorsMappings(@NonNull CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOriginPatterns("*")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH");
+            .allowedOriginPatterns("*")
+            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH")
+            .allowedHeaders("*")
+            .allowCredentials(false);
+
         registry.addMapping("/auth/**")
-                .allowedOriginPatterns("*")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH");
+            .allowedOriginPatterns("*")
+            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH")
+            .allowedHeaders("*")
+            .allowCredentials(false);
+
         // Allow the frontend to fetch metadata JSON and other media resources
         registry.addMapping("/media/**")
-                .allowedOriginPatterns("*")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH");
-    }
+            .allowedOriginPatterns("*")
+            .allowedMethods("GET", "OPTIONS")
+            .allowedHeaders("*")
+            .allowCredentials(false);
+        }
 }

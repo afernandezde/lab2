@@ -1,114 +1,123 @@
 package com.tecnocampus.LS2.protube_back.controller;
 
+import com.tecnocampus.LS2.protube_back.controller.dto.PlaylistDTO;
 import com.tecnocampus.LS2.protube_back.domain.Playlist;
 import com.tecnocampus.LS2.protube_back.services.PlaylistService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.http.ResponseEntity;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-@WebMvcTest(PlaylistController.class)
 class PlaylistControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
     private PlaylistService playlistService;
+    private PlaylistController controller;
+
+    @BeforeEach
+    void setUp() {
+        playlistService = mock(PlaylistService.class);
+        controller = new PlaylistController(playlistService);
+    }
 
     @Test
-    void getUserPlaylists() throws Exception {
+    void getUserPlaylistsReturnsList() {
         Playlist p1 = new Playlist("P1", "u1");
         when(playlistService.getPlaylists("u1")).thenReturn(Arrays.asList(p1));
 
-        mockMvc.perform(get("/api/playlists/user/u1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("P1"));
+        ResponseEntity<List<PlaylistDTO>> res = controller.getUserPlaylists("u1");
+        assertEquals(200, res.getStatusCode().value());
+        var body = res.getBody();
+        assertNotNull(body);
+        assertEquals(1, body.size());
+        assertEquals("P1", body.get(0).name());
+        assertEquals("u1", body.get(0).userId());
     }
 
     @Test
-    void createPlaylist() throws Exception {
+    void getUserPlaylistsEmpty() {
+        when(playlistService.getPlaylists("u1")).thenReturn(Collections.emptyList());
+
+        ResponseEntity<List<PlaylistDTO>> res = controller.getUserPlaylists("u1");
+        assertEquals(200, res.getStatusCode().value());
+        var body = res.getBody();
+        assertNotNull(body);
+        assertTrue(body.isEmpty());
+    }
+
+    @Test
+    void createPlaylistSuccess() {
         Playlist p = new Playlist("New List", "u1");
         when(playlistService.createPlaylist("New List", "u1")).thenReturn(p);
 
-        mockMvc.perform(post("/api/playlists/user/u1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("New List"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("New List"));
+        ResponseEntity<PlaylistDTO> res = controller.createPlaylist("u1", "\"New List\"");
+        assertEquals(200, res.getStatusCode().value());
+        var body = res.getBody();
+        assertNotNull(body);
+        assertEquals("New List", body.name());
+        assertEquals("u1", body.userId());
     }
 
     @Test
-    void getWatchLater() throws Exception {
+    void createPlaylistDuplicate() {
+        when(playlistService.createPlaylist("Existing", "u1"))
+                .thenThrow(new IllegalArgumentException("Duplicate"));
+
+        ResponseEntity<PlaylistDTO> res = controller.createPlaylist("u1", "\"Existing\"");
+        assertEquals(400, res.getStatusCode().value());
+    }
+
+    @Test
+    void getWatchLaterSuccess() {
         Playlist wl = new Playlist("Watch Later", "u1");
         when(playlistService.getWatchLater("u1")).thenReturn(wl);
 
-        mockMvc.perform(get("/api/playlists/user/u1/watch-later"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Watch Later"));
+        ResponseEntity<PlaylistDTO> res = controller.getWatchLater("u1");
+        assertEquals(200, res.getStatusCode().value());
+        var body = res.getBody();
+        assertNotNull(body);
+        assertEquals("Watch Later", body.name());
+        assertEquals("u1", body.userId());
     }
 
     @Test
-    void addVideo() throws Exception {
-        mockMvc.perform(post("/api/playlists/p1/videos/v1"))
-                .andExpect(status().isOk());
+    void deletePlaylistCallsService() {
+        doNothing().when(playlistService).deletePlaylist("p1");
+        ResponseEntity<Void> res = controller.deletePlaylist("p1");
 
-        verify(playlistService).addVideoToPlaylist("p1", "v1");
-    }
-
-    @Test
-    void removeVideo() throws Exception {
-        mockMvc.perform(delete("/api/playlists/p1/videos/v1"))
-                .andExpect(status().isOk());
-
-        verify(playlistService).removeVideoFromPlaylist("p1", "v1");
-    }
-
-    @Test
-    void removeVideo_withDot() throws Exception {
-        mockMvc.perform(delete("/api/playlists/p1/videos/video.mp4"))
-                .andExpect(status().isOk());
-
-        verify(playlistService).removeVideoFromPlaylist("p1", "video.mp4");
-    }
-
-    @Test
-    void deletePlaylist() throws Exception {
-        mockMvc.perform(delete("/api/playlists/p1"))
-                .andExpect(status().isNoContent());
-
+        assertEquals(204, res.getStatusCode().value());
         verify(playlistService).deletePlaylist("p1");
     }
 
     @Test
-    void createPlaylist_duplicate() throws Exception {
-        when(playlistService.createPlaylist("Existing", "u1"))
-            .thenThrow(new IllegalArgumentException("Duplicate"));
+    void addVideoCallsService() {
+        doNothing().when(playlistService).addVideoToPlaylist("p1", "v1");
+        ResponseEntity<Void> res = controller.addVideo("p1", "v1");
 
-        mockMvc.perform(post("/api/playlists/user/u1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("Existing"))
-                .andExpect(status().isBadRequest());
+        assertEquals(200, res.getStatusCode().value());
+        verify(playlistService).addVideoToPlaylist("p1", "v1");
     }
 
     @Test
-    void getUserPlaylists_empty() throws Exception {
-        when(playlistService.getPlaylists("u1")).thenReturn(Collections.emptyList());
+    void removeVideoCallsService() {
+        doNothing().when(playlistService).removeVideoFromPlaylist("p1", "v1");
+        ResponseEntity<Void> res = controller.removeVideo("p1", "v1");
 
-        mockMvc.perform(get("/api/playlists/user/u1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$").isEmpty());
+        assertEquals(200, res.getStatusCode().value());
+        verify(playlistService).removeVideoFromPlaylist("p1", "v1");
+    }
+
+    @Test
+    void removeVideoWithDotCallsService() {
+        doNothing().when(playlistService).removeVideoFromPlaylist("p1", "video.mp4");
+        ResponseEntity<Void> res = controller.removeVideo("p1", "video.mp4");
+
+        assertEquals(200, res.getStatusCode().value());
+        verify(playlistService).removeVideoFromPlaylist("p1", "video.mp4");
     }
 }

@@ -84,7 +84,9 @@ const MyVideos: React.FC = () => {
       if (res.ok) {
         setComments((prev) => prev.filter((c) => c.id !== cid));
       }
-    } catch (e) {}
+    } catch (_e) {
+      /* intentionally left blank */
+    }
   };
 
   useEffect(() => {

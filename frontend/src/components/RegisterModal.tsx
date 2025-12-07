@@ -37,14 +37,16 @@ export default function RegisterModal({ onClose, onRegistered, onBackToLogin }: 
         try {
           localStorage.setItem('protube_user_id', username);
           localStorage.setItem('protube_user', username);
-        } catch {}
+        } catch (_e) {
+          /* intentionally left blank */
+        }
         setSuccess(true);
         setTimeout(() => {
           if (typeof onRegistered === 'function') onRegistered(username);
           else onClose();
         }, 800);
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Network error.');
     }
     setLoading(false);

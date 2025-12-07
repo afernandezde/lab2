@@ -13,7 +13,7 @@ export default function VideoPage() {
   const video = state?.video;
 
   // If we didn't get full video info, build URLs from name
-  const mediaBase = (window as any).__VITE_MEDIA_BASE__ || '/media';
+  const mediaBase = (window as { __VITE_MEDIA_BASE__?: string }).__VITE_MEDIA_BASE__ || '/media';
   const paramName = name ?? video?.name ?? '';
   const videoUrl = video?.videoUrl ?? (paramName ? `${mediaBase}/${paramName}` : '');
   const posterUrl = video?.posterUrl ?? (paramName ? `${mediaBase}/${paramName.replace(/\.[^/.]+$/, '')}.webp` : '');
@@ -30,14 +30,14 @@ export default function VideoPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
       return Boolean(localStorage.getItem('protube_user'));
-    } catch (e) {
+    } catch (_e) {
       return false;
     }
   });
 
   useEffect(() => {
     const onUpdate = (e: Event) => {
-      // @ts-ignore
+      // @ts-expect-error - Event.detail is not standard but used by CustomEvent
       const detail = e.detail;
       if (detail && detail.type === 'auth') {
         setIsAuthenticated(!!detail.loggedIn);
@@ -62,7 +62,7 @@ export default function VideoPage() {
       try {
         const res = await fetch(`${API}/videos/all`);
         if (res.ok) {
-          const all: any[] = await res.json();
+          const all: Array<{ videoId?: string; fileName?: string }> = await res.json();
           const key = decodeURIComponent(videoKey);
           const found = all.find((v) => {
             const fn: string = v?.fileName || '';
@@ -71,7 +71,9 @@ export default function VideoPage() {
           });
           return found?.videoId as string | undefined;
         }
-      } catch {}
+      } catch (_e) {
+        /* intentionally left blank */
+      }
       return undefined;
     };
 
@@ -101,7 +103,7 @@ export default function VideoPage() {
         } else {
           setComments([]);
         }
-      } catch {
+      } catch (_e) {
         if (!cancelled) setComments([]);
       }
     };
@@ -129,6 +131,7 @@ export default function VideoPage() {
   // Refs for positioning the inline popover near the Add button
   const actionsRef = useRef<HTMLDivElement | null>(null);
   const addButtonRef = useRef<HTMLButtonElement | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [popoverPos, setPopoverPos] = useState<{ left: number; top: number } | null>(null);
 
   const userId = localStorage.getItem('protube_user_id') || localStorage.getItem('protube_user');
@@ -141,7 +144,7 @@ export default function VideoPage() {
       const raw = localStorage.getItem('protube_liked') || '[]';
       const arr = JSON.parse(raw) as string[];
       setLiked(arr.includes(videoKey));
-    } catch (e) {
+    } catch (_e) {
       setLiked(false);
     }
 
@@ -173,13 +176,13 @@ export default function VideoPage() {
             const text = await res.text();
             const parsed = text ? JSON.parse(text) : false;
             setLiked(Boolean(parsed));
-          } catch (e) {
+          } catch (_e) {
             setLiked(false);
           }
         } else {
           setLiked(false);
         }
-      } catch (e) {
+      } catch (_e) {
         if (!cancelled) setLiked(false);
       }
     };
@@ -306,9 +309,9 @@ export default function VideoPage() {
       setShowPlaylistPopover(false);
       // Refresh
       const res = await fetch(`/api/playlists/user/${userId}`);
-      if (res.ok) setPlaylists((await res.json()).filter((p: any) => p.name !== 'Watch Later'));
-    } catch (e) {
-      console.error(e);
+      if (res.ok) setPlaylists((await res.json()).filter((p: { name: string }) => p.name !== 'Watch Later'));
+    } catch (_e) {
+      /* intentionally left blank */
     }
   };
 
@@ -330,12 +333,12 @@ export default function VideoPage() {
         setNewPlaylistName('');
         // Refresh
         const res = await fetch(`/api/playlists/user/${userId}`);
-        if (res.ok) setPlaylists((await res.json()).filter((p: any) => p.name !== 'Watch Later'));
+        if (res.ok) setPlaylists((await res.json()).filter((p: { name: string }) => p.name !== 'Watch Later'));
       } else {
         alert('Error al crear la playlist');
       }
-    } catch (e) {
-      console.error(e);
+    } catch (_e) {
+      /* intentionally left blank */
     }
   };
 
@@ -344,7 +347,9 @@ export default function VideoPage() {
   const showToast = (msg: string) => {
     try {
       window.dispatchEvent(new CustomEvent('protube:toast', { detail: { message: msg } }));
-    } catch (e) {}
+    } catch (_e) {
+      /* intentionally left blank */
+    }
   };
 
   // Close modal on Escape key when visible
@@ -378,7 +383,9 @@ export default function VideoPage() {
         ...arr.filter((a) => a.name !== videoKey),
       ];
       localStorage.setItem('protube_history', JSON.stringify(next.slice(0, 200)));
-    } catch {}
+    } catch (_e) {
+      /* intentionally left blank */
+    }
     // Backend registration
     try {
       const uid = localStorage.getItem('protube_user_id') || localStorage.getItem('protube_user');
@@ -387,9 +394,13 @@ export default function VideoPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: uid, videoFileName: videoKey }),
-        }).catch(() => {});
+        }).catch(() => {
+          /* intentionally left blank */
+        });
       }
-    } catch {}
+    } catch (_e) {
+      /* intentionally left blank */
+    }
   }, [videoKey]);
 
   // No longer saving comments in localStorage; using backend API instead
@@ -401,7 +412,7 @@ export default function VideoPage() {
     const currentUser = (() => {
       try {
         return localStorage.getItem('protube_username') || 'Usuario';
-      } catch (e) {
+      } catch (_e) {
         return 'Usuario';
       }
     })();
@@ -433,7 +444,9 @@ export default function VideoPage() {
           showToast('Comentari guardat');
           try {
             window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'comentari', videoKey } }));
-          } catch {}
+          } catch (_e) {
+            /* intentionally left blank */
+          }
           // Refresh comments from backend to reflect persisted state
           try {
             const vid = resolvedVideoId || backendVideoId;
@@ -456,7 +469,9 @@ export default function VideoPage() {
                 setComments(mapped);
               }
             }
-          } catch {}
+          } catch (_e) {
+            /* intentionally left blank */
+          }
         } else {
           let msg = "No s'ha pogut desar el comentari al servidor";
           try {
@@ -466,7 +481,9 @@ export default function VideoPage() {
               const txt = await resp.text();
               if (txt) msg = txt;
             }
-          } catch {}
+          } catch (_e) {
+            /* intentionally left blank */
+          }
           showToast(msg);
           console.warn('Failed to save comment to backend', resp.status, msg);
         }

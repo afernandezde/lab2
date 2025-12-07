@@ -27,14 +27,14 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
       return Boolean(localStorage.getItem('protube_user'));
-    } catch (e) {
+    } catch (_e) {
       return false;
     }
   });
   const [username, setUsername] = useState<string | null>(() => {
     try {
       return localStorage.getItem('protube_username');
-    } catch (e) {
+    } catch (_e) {
       return null;
     }
   });
@@ -85,10 +85,12 @@ function App() {
   useEffect(() => {
     const onToast = (e: Event) => {
       try {
-        // @ts-ignore
+        // @ts-expect-error - Event.detail is not standard but used by CustomEvent
         const msg = e?.detail?.message as string | undefined;
         if (msg) setToast(msg);
-      } catch (e) {}
+      } catch (_e) {
+        /* intentionally left blank */
+      }
     };
     window.addEventListener('protube:toast', onToast as EventListener);
     const onOpenUpload = () => setUploadOpen(true);
@@ -138,8 +140,12 @@ function App() {
       // notify other components in the same tab to refresh auth-dependent state
       try {
         window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'auth', loggedIn: false } }));
-      } catch (e) {}
-    } catch (e) {}
+      } catch (_e) {
+        /* intentionally left blank */
+      }
+    } catch (_e) {
+      /* intentionally left blank */
+    }
   };
 
   return (
@@ -159,11 +165,15 @@ function App() {
                   localStorage.setItem('protube_username', name);
                   localStorage.setItem('protube_user_id', name); // Use username as ID for consistency
                   localStorage.setItem('protube_user', name);
-                } catch (e) {}
+                } catch (_e) {
+                  /* intentionally left blank */
+                }
               }
               try {
                 window.dispatchEvent(new CustomEvent('protube:update', { detail: { type: 'auth', loggedIn: true } }));
-              } catch (e) {}
+              } catch (_e) {
+                /* intentionally left blank */
+              }
             }}
           />
         )}
@@ -195,7 +205,9 @@ function App() {
                       setCreateOpen(false);
                       try {
                         window.dispatchEvent(new CustomEvent('protube:open-upload'));
-                      } catch (e) {}
+                      } catch (_e) {
+                        /* intentionally left blank */
+                      }
                     }}
                   >
                     Penja un vídeo

@@ -37,7 +37,9 @@ export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
         try {
           localStorage.setItem('protube_user_id', email);
           localStorage.setItem('protube_user', email);
-        } catch {}
+        } catch (_e) {
+          /* intentionally left blank */
+        }
         setSuccess(true);
         // try to fetch the real username from the backend and pass it back
         setTimeout(async () => {
@@ -49,7 +51,7 @@ export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
               // backend returns plain username string
               if (body && body.trim().length > 0) nameToUse = body.trim();
             }
-          } catch (e) {
+          } catch (_e) {
             // ignore and fallback
           }
           // fallback to email if username lookup failed
@@ -58,7 +60,7 @@ export default function LoginModal({ onClose, onLoggedIn }: LoginModalProps) {
           else onClose();
         }, 800);
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Network error.');
     }
     setLoading(false);

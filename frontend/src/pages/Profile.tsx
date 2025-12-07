@@ -6,6 +6,7 @@ type Post = { id: string; text: string; image?: string; video?: string; createdA
 
 const STORAGE_KEY = 'protube_channel_videos';
 const POSTS_KEY = 'protube_channel_posts';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PROFILE_KEY = 'protube_channel_profile';
 
 type ChannelProfile = { title: string; description?: string; avatarDataUrl?: string };
@@ -26,6 +27,7 @@ const Profile: React.FC = () => {
     }
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [videos, setVideos] = useState<ChannelVideo[]>(() => {
     try {
       return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -71,18 +73,23 @@ const Profile: React.FC = () => {
     if (h === '#post') setTimeout(() => postTextRef.current?.focus(), 50);
   }, [location]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const saveVideos = (next: ChannelVideo[]) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       setVideos(next);
-    } catch {}
+    } catch (_e) {
+      /* intentionally left blank */
+    }
   };
   const savePosts = (next: Post[]) => {
     try {
       const key = `${POSTS_KEY}_${username}`;
       localStorage.setItem(key, JSON.stringify(next));
       setPosts(next);
-    } catch {}
+    } catch (_e) {
+      /* intentionally left blank */
+    }
   };
 
   const createPost = (e?: React.FormEvent) => {
@@ -120,7 +127,9 @@ const Profile: React.FC = () => {
       try {
         const res = await fetch(`/api/users/username?email=${encodeURIComponent(identifier)}`);
         if (res.ok) return await res.text();
-      } catch {}
+      } catch (_e) {
+        /* intentionally left blank */
+      }
     }
     return identifier;
   };
@@ -146,7 +155,9 @@ const Profile: React.FC = () => {
               avatarDataUrl: data.avatar,
             });
           })
-          .catch((err) => console.error(err));
+          .catch((_err) => {
+            /* intentionally left blank */
+          });
       } else {
         setProfile({ title: 'Mi canal' });
       }
@@ -154,7 +165,7 @@ const Profile: React.FC = () => {
     init();
 
     const onUpdate = (e: Event) => {
-      // @ts-ignore
+      // @ts-expect-error - Event.detail is not standard but used by CustomEvent
       const detail = e.detail;
       if (detail && detail.type === 'auth') {
         if (detail.loggedIn === false) {
@@ -277,7 +288,7 @@ const Profile: React.FC = () => {
 
           const p2 = fetch('/api/videos/all')
             .then((res) => (res.ok ? res.json() : []))
-            .then(async (allVideos: any[]) => {
+            .then(async (allVideos: Array<{ videoId: string; title?: string; fileName: string; userId: string }>) => {
               // Create video map
               const vMap: Record<string, { title: string; fileName: string }> = {};
               allVideos.forEach((v) => {
@@ -290,8 +301,17 @@ const Profile: React.FC = () => {
 
               const resMap = await fetch('/api/comentaris/map');
               if (resMap.ok) {
-                const map: Record<string, any[]> = await resMap.json();
-                let received: any[] = [];
+                const map: Record<
+                  string,
+                  Array<{ id: string; userId: string; titulo?: string; descripcion?: string }>
+                > = await resMap.json();
+                let received: Array<{
+                  id: string;
+                  videoId: string;
+                  userId: string;
+                  titulo?: string;
+                  descripcion?: string;
+                }> = [];
                 Object.keys(map).forEach((vid) => {
                   if (myVideoIds.has(vid)) {
                     const comments = map[vid].map((c) => ({ ...c, videoId: vid }));
@@ -329,7 +349,9 @@ const Profile: React.FC = () => {
       if (res.ok) {
         setUserComments((prev) => prev.filter((c) => c.id !== cid));
       }
-    } catch (e) {}
+    } catch (_e) {
+      /* intentionally left blank */
+    }
   };
 
   const navigate = useNavigate();

@@ -44,16 +44,18 @@ export default function History() {
         if (!res.ok) throw new Error('Error history fetch');
         const data = await res.json();
         if (abort) return;
-        const mapped: HistoryEntry[] = (data as any[]).map((d) => ({
-          name: d.videoFileName,
-          title: d.title || d.videoFileName,
-          posterUrl: `/media/${d.videoFileName.replace(/\.[^.]+$/, '')}.webp`,
-          videoUrl: `/media/${d.videoFileName}`,
-          viewedAt: d.viewedAt,
-        }));
+        const mapped: HistoryEntry[] = (data as Array<{ videoFileName: string; title?: string; viewedAt: number }>).map(
+          (d) => ({
+            name: d.videoFileName,
+            title: d.title || d.videoFileName,
+            posterUrl: `/media/${d.videoFileName.replace(/\.[^.]+$/, '')}.webp`,
+            videoUrl: `/media/${d.videoFileName}`,
+            viewedAt: d.viewedAt,
+          })
+        );
         setBackendHistory(mapped);
-      } catch (e: any) {
-        if (!abort) setError(e.message || 'Error');
+      } catch (e) {
+        if (!abort) setError((e as Error).message || 'Error');
       } finally {
         if (!abort) setLoading(false);
       }
@@ -68,7 +70,9 @@ export default function History() {
     try {
       localStorage.removeItem('protube_history');
       setHistory([]);
-    } catch {}
+    } catch (_e) {
+      /* intentionally left blank */
+    }
     // Note: backend history clearing endpoint not implemented yet
   };
 

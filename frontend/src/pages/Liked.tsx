@@ -5,10 +5,11 @@ import { useAllVideos } from '../useAllVideos';
 const Liked: React.FC = () => {
   const { value: videos } = useAllVideos();
   const [liked, setLiked] = React.useState<string[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isAuth, setIsAuth] = React.useState<boolean>(() => {
     try {
       return Boolean(localStorage.getItem('protube_user_id') || localStorage.getItem('protube_user'));
-    } catch (e) {
+    } catch (_e) {
       return false;
     }
   });
@@ -28,11 +29,13 @@ const Liked: React.FC = () => {
           setLiked(data || []);
           return;
         }
-      } catch (e) {}
+      } catch (_e) {
+        /* intentionally left blank */
+      }
       if (!cancelled) setLiked([]);
     };
     load();
-    const onUpdate = (e: Event) => {
+    const onUpdate = (_e: Event) => {
       load();
     };
     window.addEventListener('protube:update', onUpdate as EventListener);
@@ -49,7 +52,12 @@ const Liked: React.FC = () => {
     if (byId) return byId;
     const byName = videos.find((v) => v.name === id);
     if (byName) return byName;
-    return { name: id, title: id, posterUrl: '' } as any;
+    return { name: id, title: id, posterUrl: '' } as {
+      name: string;
+      title: string;
+      posterUrl: string;
+      videoId?: string;
+    };
   });
 
   return (

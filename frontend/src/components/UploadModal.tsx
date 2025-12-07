@@ -16,6 +16,7 @@ type UploadItem = {
   published: boolean;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const STORAGE_KEY = 'protube_channel_videos';
 
 const UploadModal: React.FC<Props> = ({ onClose }) => {
@@ -30,9 +31,13 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
         createdUrls.forEach((u) => {
           try {
             URL.revokeObjectURL(u);
-          } catch (e) {}
+          } catch (_e) {
+            /* intentionally left blank */
+          }
         });
-      } catch (e) {}
+      } catch (_e) {
+        /* intentionally left blank */
+      }
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
@@ -63,8 +68,12 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
         urls.push(u);
         try {
           sessionStorage.setItem('protube_blob_' + it.file.name, u);
-        } catch (e) {}
-      } catch (e) {}
+        } catch (_e) {
+          /* intentionally left blank */
+        }
+      } catch (_e) {
+        /* intentionally left blank */
+      }
     }
     setCreatedUrls(urls);
     setPreviewUrl(urls[0] || null);
@@ -111,11 +120,15 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
             detail: { message: allOk ? (publish ? 'Vídeos publicats' : 'Vídeos desats') : 'Alguns errors en pujar' },
           })
         );
-      } catch (e) {}
-    } catch (e) {
+      } catch (_e) {
+        /* intentionally left blank */
+      }
+    } catch (_e) {
       try {
         window.alert('Error uploading the videos');
-      } catch {}
+      } catch (_e2) {
+        /* intentionally left blank */
+      }
     } finally {
       onClose();
     }
@@ -159,10 +172,11 @@ const UploadModal: React.FC<Props> = ({ onClose }) => {
 
   const cur = items[0];
   // playlists list available
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const playlists = (() => {
     try {
       return Object.keys(JSON.parse(localStorage.getItem('protube_playlists') || '{}'));
-    } catch (e) {
+    } catch (_e) {
       return [];
     }
   })();
